@@ -268,7 +268,7 @@ The project includes a comprehensive comparison prompt template that enables eas
    - `metrics_dotnet_ollama_[timestamp].json`
    - `metrics_python_ollama_[timestamp].json`
 
-3. **Use the comparison prompt** from `comparison_prompt_template.md`:
+3. **Use the comparison prompt** from `docs/comparison_prompt_template.md`:
    - Open the template file
    - Copy the prompt
    - Paste the content of your two metrics JSON files into the prompt
@@ -280,7 +280,7 @@ The project includes a comprehensive comparison prompt template that enables eas
    - Statistical insights
    - Recommendations
 
-See [comparison_prompt_template.md](comparison_prompt_template.md) for detailed instructions and the full prompt template.
+See [docs/comparison_prompt_template.md](docs/comparison_prompt_template.md) for detailed instructions and the full prompt template.
 
 ### Manual Comparison
 
@@ -498,6 +498,55 @@ TEST_MODE=scenarios dotnet run
 TEST_MODE=scenarios python main.py
 ```
 
+## Test Automation Scripts
+
+To simplify running tests and organizing results, this project includes automated scripts:
+
+### Quick Start with Scripts
+
+```bash
+# Linux/Mac - Run all tests
+./run_tests.sh
+
+# Windows PowerShell
+.\run_tests.ps1
+
+# Windows Command Prompt
+run_tests.bat
+
+# Organize results after testing
+python3 organize_results.py
+```
+
+### Advanced Usage
+
+```bash
+# Run specific test mode
+TEST_MODE=batch BATCH_SIZE=20 ITERATIONS=100 ./run_tests.sh
+
+# Run specific agent type
+AGENT_TYPE=Ollama ./run_tests.sh
+
+# Run all agents with concurrent mode
+TEST_MODE=concurrent CONCURRENT_REQUESTS=10 AGENT_TYPE=All ./run_tests.sh
+```
+
+The scripts automatically:
+- Run both .NET and Python implementations
+- Export metrics to JSON files
+- Support all test modes (standard, batch, concurrent, streaming, scenarios)
+- Handle agent-specific configuration
+
+After running tests, use `organize_results.py` to:
+- Create timestamped folders in `tests_results/`
+- Move all metrics files to organized folders
+- Generate comparison markdown with LLM-ready prompts
+- **Automatically analyze results using Ollama or Azure OpenAI** (if configured)
+
+The script detects available LLM providers and generates an automated analysis report alongside the comparison report.
+
+See [docs/SCRIPTS_README.md](docs/SCRIPTS_README.md) for detailed documentation.
+
 ## Completed Features
 
 - ✅ **Basic Hello World Agents**: Simple implementations in C# and Python with 1000-iteration performance testing
@@ -516,6 +565,9 @@ TEST_MODE=scenarios python main.py
 - ✅ **Automated Comparison Reports**: Enhanced JSON with summary generation
 - ✅ **Streaming Response Tests**: Time-to-first-token measurement
 - ✅ **Concurrent Request Handling**: Async concurrent execution using Task.WhenAll and asyncio.gather
+- ✅ **Test Automation Scripts**: Bash, PowerShell, and Batch scripts to run tests in different modes
+- ✅ **Results Organization Tool**: Python script to organize test results and generate comparison reports
+- ✅ **Automated LLM Analysis**: Automatic performance analysis using Ollama or Azure OpenAI
 
 ## Contributing
 
