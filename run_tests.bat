@@ -6,8 +6,8 @@ setlocal enabledelayedexpansion
 
 REM Default values
 if "%TEST_MODE%"=="" set TEST_MODE=standard
-if "%ITERATIONS%"=="" set ITERATIONS=1000
-if "%AGENT_TYPE%"=="" set AGENT_TYPE=HelloWorld
+if "%ITERATIONS%"=="" set ITERATIONS=10
+if "%AGENT_TYPE%"=="" set AGENT_TYPE=Ollama
 if "%BATCH_SIZE%"=="" set BATCH_SIZE=10
 if "%CONCURRENT_REQUESTS%"=="" set CONCURRENT_REQUESTS=5
 

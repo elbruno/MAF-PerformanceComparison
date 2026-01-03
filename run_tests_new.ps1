@@ -33,10 +33,10 @@ Write-Host ''
 function RunDotNet {
     param([string]$agentDir, [string]$agentName)
     if (-not (Test-Path $agentDir)) {
-        WriteColor "Skipping .NET ${agentName}: directory not found: $agentDir" 'Yellow'
+        WriteColor "Skipping .NET $agentName: directory not found: $agentDir" 'Yellow'
         return
     }
-    WriteColor "Running .NET ${agentName} test..." 'Yellow'
+    WriteColor "Running .NET $agentName test..." 'Yellow'
     Push-Location $agentDir
     try {
         $env:TEST_MODE = $TestMode
@@ -47,7 +47,7 @@ function RunDotNet {
         dotnet build | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Failed to build .NET project' }
         dotnet run
-        WriteColor "[OK] .NET ${agentName} test completed" 'Green'
+        WriteColor "[OK] .NET $agentName test completed" 'Green'
         Write-Host ''
     }
     catch {
@@ -61,10 +61,10 @@ function RunDotNet {
 function RunPython {
     param([string]$agentDir, [string]$agentName)
     if (-not (Test-Path $agentDir)) {
-        WriteColor "Skipping Python ${agentName}: directory not found: $agentDir" 'Yellow'
+        WriteColor "Skipping Python $agentName: directory not found: $agentDir" 'Yellow'
         return
     }
-    WriteColor "Running Python ${agentName} test..." 'Yellow'
+    WriteColor "Running Python $agentName test..." 'Yellow'
     Push-Location $agentDir
     try {
         $env:TEST_MODE = $TestMode
@@ -79,7 +79,7 @@ function RunPython {
 
         if (-not $python) {
             Write-Host 'Python not found on PATH. To run Python tests, install Python and ensure it is on PATH.' -ForegroundColor Yellow
-            Write-Host "Skipping Python ${agentName} test." -ForegroundColor Yellow
+            Write-Host "Skipping Python $agentName test." -ForegroundColor Yellow
             return
         }
 
@@ -93,7 +93,7 @@ function RunPython {
             return
         }
 
-        WriteColor "[OK] Python ${agentName} test completed" 'Green'
+        WriteColor "[OK] Python $agentName test completed" 'Green'
         Write-Host ''
     }
     catch {
