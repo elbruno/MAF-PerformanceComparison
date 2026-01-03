@@ -55,29 +55,46 @@ try
         
         Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
 
-        // Run 1000 iterations with actual Ollama calls
+        // Run iterations with actual Ollama calls
         for (int i = 0; i < ITERATIONS; i++)
         {
             var iterationStart = Stopwatch.GetTimestamp();
+            bool iterationSucceeded = false;
 
-            try
+            // Attempt call with retry on incomplete stream
+            const int maxRetries = 2;
+            var attempt = 0;
+            for (; attempt <= maxRetries && !iterationSucceeded; attempt++)
             {
-                // Invoke the agent
-                var response = await agent.RunAsync($"Say hello {i + 1}");
-                // Optionally inspect response here if needed (response.ToString() may be useful)
-            }
-            catch (InvalidOperationException invEx) when (invEx.Message?.Contains("did not yield an item with Done=true") ?? false)
-            {
-                // Handle incomplete/corrupted stream from OllamaSharp gracefully and continue
-                Console.WriteLine($"\n⚠ Warning: Incomplete stream detected for iteration {i + 1}. Falling back to simulated response.");
-                Console.WriteLine($"  Detail: {invEx}");
-                // Fallback: simulate a response for this iteration so the performance loop continues
-            }
-            catch (Exception ex)
-            {
-                // For any other exception during a single iteration, log and continue with a simulated response
-                Console.WriteLine($"\n⚠ Warning: Exception during iteration {i + 1}: {ex}");
-                Console.WriteLine("  Continuing with demo/simulated response for this iteration.");
+                try
+                {
+                    // Invoke the agent
+                    var response = await agent.RunAsync($"Say hello {i + 1}");
+                    iterationSucceeded = true;
+                }
+                catch (InvalidOperationException invEx) when (invEx.Message?.Contains("did not yield an item with Done=true") ?? false)
+                {
+                    // Incomplete/corrupted stream - retry with backoff
+                    if (attempt < maxRetries)
+                    {
+                        var backoffMs = 100 * (int)Math.Pow(2, attempt); // 100ms, 200ms, ...
+                        Console.WriteLine($"\n⚠ Warning: Incomplete stream on iteration {i + 1}, attempt {attempt + 1}/{maxRetries + 1}. Retrying after {backoffMs}ms...");
+                        await Task.Delay(backoffMs);
+                        continue; // retry
+                    }
+
+                    // All retries exhausted - fallback
+                    Console.WriteLine($"\n⚠ Warning: Incomplete stream detected for iteration {i + 1} after {maxRetries + 1} attempts. Falling back to simulated response.");
+                    Console.WriteLine($"  Detail: {invEx}");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // For other exceptions, log and break to use simulated response
+                    Console.WriteLine($"\n⚠ Warning: Exception during iteration {i + 1}: {ex}");
+                    Console.WriteLine("  Continuing with demo/simulated response for this iteration.");
+                    break;
+                }
             }
 
             var iterationEnd = Stopwatch.GetTimestamp();
