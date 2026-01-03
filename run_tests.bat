@@ -81,19 +81,50 @@ echo ============================================
 echo All tests completed successfully!
 echo ============================================
 echo.
-echo Next steps:
+echo Processing results...
+cd /d "%SCRIPT_DIR%"
+
+REM Run process_results_ollama.py automatically
 where python3 >nul 2>&1
 if %ERRORLEVEL%==0 (
-    echo 1. Run: python3 process_results_ollama.py
+    python3 process_results_ollama.py
+    if %ERRORLEVEL%==0 (
+        echo + Results processed successfully
+        echo.
+        echo Check the tests_results\ folder for organized results
+    ) else (
+        echo Failed to process results
+    )
 ) else (
     where py >nul 2>&1
     if %ERRORLEVEL%==0 (
-        echo 1. Run: py process_results_ollama.py
+        py process_results_ollama.py
+        if %ERRORLEVEL%==0 (
+            echo + Results processed successfully
+            echo.
+            echo Check the tests_results\ folder for organized results
+        ) else (
+            echo Failed to process results
+        )
     ) else (
-        echo 1. Run: python process_results_ollama.py
+        where python >nul 2>&1
+        if %ERRORLEVEL%==0 (
+            python process_results_ollama.py
+            if %ERRORLEVEL%==0 (
+                echo + Results processed successfully
+                echo.
+                echo Check the tests_results\ folder for organized results
+            ) else (
+                echo Failed to process results
+            )
+        ) else (
+            echo Python not found. Skipping results processing.
+            echo Next steps:
+            echo 1. Run: python process_results_ollama.py
+            echo 2. Check the tests_results\ folder for organized results
+        )
     )
 )
-echo 2. Check the tests_results\ folder for organized results
 goto :eof
 
 :run_dotnet_test

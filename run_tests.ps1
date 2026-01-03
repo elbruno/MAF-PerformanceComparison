@@ -138,6 +138,37 @@ WriteColor '============================================' 'Green'
 WriteColor 'All tests completed successfully!' 'Green'
 WriteColor '============================================' 'Green'
 Write-Host ''
-WriteColor 'Next steps:' 'Cyan'
-Write-Host '1. Run: python process_results_ollama.py'
-Write-Host '2. Check the tests_results\ folder for organized results'
+
+# Run process_results_ollama.py automatically
+WriteColor 'Processing results...' 'Cyan'
+$python = $null
+if (Get-Command py -ErrorAction SilentlyContinue) { $python = 'py' }
+elseif (Get-Command python -ErrorAction SilentlyContinue) { $python = 'python' }
+elseif (Get-Command python3 -ErrorAction SilentlyContinue) { $python = 'python3' }
+
+if ($python) {
+    Push-Location $scriptDir
+    try {
+        & $python process_results_ollama.py
+        if ($LASTEXITCODE -eq 0) {
+            WriteColor '[OK] Results processed successfully' 'Green'
+            Write-Host ''
+            WriteColor 'Check the tests_results\ folder for organized results' 'Cyan'
+        }
+        else {
+            WriteColor 'Failed to process results' 'Yellow'
+        }
+    }
+    catch {
+        WriteColor "Error processing results: $_" 'Yellow'
+    }
+    finally {
+        Pop-Location
+    }
+}
+else {
+    WriteColor 'Python not found. Skipping results processing.' 'Yellow'
+    WriteColor 'Next steps:' 'Cyan'
+    Write-Host '1. Run: python process_results_ollama.py'
+    Write-Host '2. Check the tests_results\ folder for organized results'
+}

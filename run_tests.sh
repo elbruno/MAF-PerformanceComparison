@@ -132,6 +132,30 @@ echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}All tests completed successfully!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo ""
-echo -e "${BLUE}Next steps:${NC}"
-echo "1. Run: python3 process_results_ollama.py"
-echo "2. Check the tests_results/ folder for organized results"
+
+# Run process_results_ollama.py automatically
+echo -e "${BLUE}Processing results...${NC}"
+cd "${SCRIPT_DIR}"
+
+if command -v python3 &> /dev/null; then
+    if python3 process_results_ollama.py; then
+        echo -e "${GREEN}✓ Results processed successfully${NC}"
+        echo ""
+        echo -e "${BLUE}Check the tests_results/ folder for organized results${NC}"
+    else
+        echo -e "${YELLOW}Failed to process results${NC}"
+    fi
+elif command -v python &> /dev/null; then
+    if python process_results_ollama.py; then
+        echo -e "${GREEN}✓ Results processed successfully${NC}"
+        echo ""
+        echo -e "${BLUE}Check the tests_results/ folder for organized results${NC}"
+    else
+        echo -e "${YELLOW}Failed to process results${NC}"
+    fi
+else
+    echo -e "${YELLOW}Python not found. Skipping results processing.${NC}"
+    echo -e "${BLUE}Next steps:${NC}"
+    echo "1. Run: python3 process_results_ollama.py"
+    echo "2. Check the tests_results/ folder for organized results"
+fi
