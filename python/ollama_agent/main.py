@@ -33,7 +33,7 @@ async def run_performance_test() -> None:
     
     # Configuration - Read from environment variables or use defaults
     endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
-    model_name = os.getenv("OLLAMA_MODEL_NAME", "llama2")
+    model_name = os.getenv("OLLAMA_MODEL_NAME", "ministral-3")
     
     print(f"Configuring for Ollama endpoint: {endpoint}")
     print(f"Using model: {model_name}")

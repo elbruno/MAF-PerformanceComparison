@@ -35,7 +35,7 @@ async def run_performance_test() -> None:
     
     # Configuration - Read from environment variables
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5-mini")
     
     # Start performance measurement
     start_time = time.time()
@@ -51,7 +51,7 @@ async def run_performance_test() -> None:
             print("⚠ AZURE_OPENAI_ENDPOINT not found. Using demo mode.")
             print("To use Azure OpenAI, set the following environment variables:")
             print("  - AZURE_OPENAI_ENDPOINT")
-            print("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-4o-mini')")
+            print("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-5-mini')")
             print(f"\n✓ Agent framework structure ready (demo mode)")
             print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
             
