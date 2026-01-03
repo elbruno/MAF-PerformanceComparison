@@ -1,11 +1,15 @@
 import asyncio
 import json
 import os
+import sys
 import time
 import psutil
 from random import randint
 from typing import Annotated
 from datetime import datetime, timezone
+
+# Ensure shared python/ directory is on path to locate local agent_framework shim
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from agent_framework.azure import AzureAIClient
 from azure.identity.aio import AzureCliCredential
