@@ -1,24 +1,45 @@
+import asyncio
 import os
 import time
-import asyncio
 import psutil
+from datetime import datetime
+
+from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-async def main():
+"""
+Ollama Agent Performance Test
+
+This sample demonstrates implementing an Ollama agent with performance testing.
+
+Ensure to install Ollama and have a model running locally before running the sample.
+Not all Models support function calling, to test function calling try llama3.2 or qwen3:4b
+Set the model to use via the OLLAMA_MODEL_NAME environment variable or modify the code below.
+https://ollama.com/
+"""
+
+
+def get_time(location: str) -> str:
+    """Get the current time."""
+    return f"The current time in {location} is {datetime.now().strftime('%I:%M %p')}."
+
+
+async def run_performance_test() -> None:
+    """Run 1000 iterations of agent operations for performance testing."""
     print("=== Python Microsoft Agent Framework - Ollama Agent ===\n")
     
     # Configuration - Read from environment variables or use defaults
     endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
-    model_id = os.getenv("OLLAMA_MODEL_ID", "llama2")
+    model_name = os.getenv("OLLAMA_MODEL_NAME", "llama2")
     
     print(f"Configuring for Ollama endpoint: {endpoint}")
-    print(f"Using model: {model_id}")
+    print(f"Using model: {model_name}")
     print("\nNote: This requires Ollama to be running locally.")
     print("Install Ollama from: https://ollama.ai/")
-    print(f"Start Ollama and pull the model: ollama pull {model_id}\n")
+    print(f"Start Ollama and pull the model: ollama pull {model_name}\n")
     
     # Start performance measurement
     start_time = time.time()
@@ -30,24 +51,24 @@ async def main():
     iteration_times = []
     
     try:
-        # For actual Ollama integration with Microsoft Agent Framework, use:
-        # from agent_framework import ChatAgent
-        # from openai import AsyncOpenAI
-        # 
-        # client = AsyncOpenAI(api_key="not-used", base_url=f"{endpoint}/v1")
-        # agent = ChatAgent(chat_client=client, instructions="You are a helpful assistant.")
+        # Create agent using agent-framework with Ollama
+        agent = OllamaChatClient(model_id=model_name).create_agent(
+            name="PerformanceTestAgent",
+            instructions="You are a helpful assistant. Provide brief, concise responses.",
+            tools=get_time,
+        )
         
         print("✓ Agent framework initialized successfully")
         print("✓ Ollama service configured")
         print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
         
         try:
-            # Run 1000 iterations (demo mode without actual Ollama calls)
+            # Run 1000 iterations with actual Ollama calls
             for i in range(ITERATIONS):
                 iteration_start = time.time()
                 
-                # Simulate agent operation
-                response = f"Response {i + 1}"
+                # Invoke the agent
+                result = await agent.run(f"Say hello {i + 1}")
                 
                 iteration_end = time.time()
                 iteration_times.append((iteration_end - iteration_start) * 1000)
@@ -55,18 +76,33 @@ async def main():
                 if (i + 1) % 100 == 0:
                     print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
             
-            print("\n--- Sample Agent Response ---")
-            print("Hello from the Microsoft Agent Framework with Ollama!")
-            print("This agent is ready to process requests.")
-            print("Performance test completed successfully.")
-            print("---------------------------\n")
+            # Show a sample streaming response
+            print("\n--- Sample Agent Streaming Response ---")
+            print("Agent: ", end="", flush=True)
+            async for chunk in agent.run_stream("What time is it in Seattle?"):
+                if chunk.text:
+                    print(chunk.text, end="", flush=True)
+            print("\n---------------------------\n")
             
         except Exception as connect_ex:
             print(f"\n⚠ Could not connect to Ollama at {endpoint}")
             print("Please ensure Ollama is running and the model is available.")
             print(f"Error: {connect_ex}")
-            return
+            print("\nRunning in demo mode instead...\n")
             
+            # Run in demo mode if Ollama is not available
+            for i in range(ITERATIONS):
+                iteration_start = time.time()
+                
+                # Simulate agent operation
+                response = f"Response {i + 1} (Demo mode)"
+                
+                iteration_end = time.time()
+                iteration_times.append((iteration_end - iteration_start) * 1000)
+                
+                if (i + 1) % 100 == 0:
+                    print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
+        
         # Calculate statistics
         avg_iteration_time = sum(iteration_times) / len(iteration_times)
         min_iteration_time = min(iteration_times)
@@ -94,5 +130,6 @@ async def main():
     print(f"Memory Used: {memory_used:.2f} MB")
     print("========================\n")
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_performance_test())

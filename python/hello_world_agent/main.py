@@ -14,15 +14,10 @@ ITERATIONS = 1000
 iteration_times = []
 
 try:
-    # Note: This is a mock/demo setup without external AI services
-    # The agent framework is initialized in a minimal configuration
-    # For actual Azure OpenAI or Ollama, you would use:
-    # from agent_framework import ChatAgent
-    # from agent_framework.openai import OpenAIChatClient
-    # agent = ChatAgent(chat_client=OpenAIChatClient(), instructions="Your instructions")
-    
     print(f"✓ Agent framework initialized successfully")
     print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
+    print("Note: This is a demo/mock setup without external AI services")
+    print("For actual Azure OpenAI or Ollama, see the respective agent examples.\n")
     
     # Run 1000 iterations to measure performance
     for i in range(ITERATIONS):

@@ -9,7 +9,6 @@ This project compares the performance and resource usage of Microsoft Agent Fram
 ## Project Structure
 
 ```
-srcMAFPerformance/
 ├── dotnet/
 │   ├── HelloWorldAgent/           # Basic C# agent (demo/mock mode)
 │   │   ├── Program.cs
@@ -39,8 +38,8 @@ srcMAFPerformance/
 ## Prerequisites
 
 ### For .NET (C#)
-- .NET 8.0 SDK or later
-- Azure.AI.OpenAI NuGet package (automatically installed)
+- .NET 10.0 SDK or later
+- Microsoft.Agents.AI NuGet package (automatically installed)
 - Azure.Identity NuGet package (for authentication)
 
 ### For Python
@@ -67,14 +66,14 @@ These agents demonstrate the framework structure without requiring external serv
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/HelloWorldAgent
+cd dotnet/HelloWorldAgent
 dotnet build
 dotnet run
 ```
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/hello_world_agent
+cd python/hello_world_agent
 pip install -r requirements.txt
 python main.py
 ```
@@ -86,13 +85,13 @@ python main.py
 2. Fill in your Azure OpenAI credentials:
    ```
    AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
    ```
+3. Authenticate with Azure CLI: `az login`
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/AzureOpenAIAgent
+cd dotnet/AzureOpenAIAgent
 # Create .env file with your credentials
 dotnet build
 dotnet run
@@ -100,7 +99,7 @@ dotnet run
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/azure_openai_agent
+cd python/azure_openai_agent
 # Create .env file with your credentials
 pip install -r requirements.txt
 python main.py
@@ -116,14 +115,14 @@ python main.py
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/OllamaAgent
+cd dotnet/OllamaAgent
 dotnet build
 dotnet run
 ```
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/ollama_agent
+cd python/ollama_agent
 pip install -r requirements.txt
 python main.py
 ```
@@ -160,8 +159,9 @@ Set these environment variables or create a `.env` file:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | `https://your-resource.openai.azure.com/` |
-| `AZURE_OPENAI_API_KEY` | API key for authentication | `your-api-key-here` |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployed model name | `gpt-4` |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployed model name | `gpt-4o-mini` |
+
+**Note:** Authentication is handled via Azure CLI. Run `az login` before using Azure OpenAI agents.
 
 ### Ollama Configuration
 
@@ -170,7 +170,7 @@ Set these environment variables or create a `.env` file (optional - defaults pro
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OLLAMA_ENDPOINT` | Ollama service endpoint | `http://localhost:11434` |
-| `OLLAMA_MODEL_ID` | Model to use | `llama2` |
+| `OLLAMA_MODEL_NAME` | Model to use | `llama2` |
 
 ## Features
 
@@ -218,7 +218,10 @@ Both C# and Python implementations use:
 - **Solution**: Create a `.env` file with your Azure OpenAI credentials
 
 **Problem**: Connection errors or authentication failures
-- **Solution**: Verify your endpoint URL and API key are correct
+- **Solution**: 
+  - Verify your endpoint URL is correct
+  - Run `az login` to authenticate with Azure CLI
+  - Ensure your Azure account has access to the Azure OpenAI resource
 
 ### Ollama Agents
 

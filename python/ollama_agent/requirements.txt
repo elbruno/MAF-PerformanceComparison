@@ -1,0 +1,3 @@
+agent-framework-core[all]==1.0.0b251223
+psutil>=6.1.1
+python-dotenv>=1.0.1

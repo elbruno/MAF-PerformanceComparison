@@ -1,4 +1,0 @@
-agent-framework>=1.0.0b251001
-azure-ai-inference>=1.0.0b6
-psutil>=5.9.0
-python-dotenv>=1.0.0

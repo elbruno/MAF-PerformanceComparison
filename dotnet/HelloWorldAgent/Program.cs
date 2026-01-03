@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Microsoft.Agents.AI;
 
 Console.WriteLine("=== C# Microsoft Agent Framework - Hello World ===\n");
 
@@ -12,16 +13,10 @@ var iterationTimes = new List<double>();
 
 try
 {
-    // Note: This is a mock/demo setup without external AI services
-    // The agent framework is initialized in a minimal configuration
-    // For actual Azure OpenAI or Ollama, you would use:
-    // using Azure.AI.OpenAI;
-    // using Azure.Identity;
-    // var client = new AzureOpenAIClient(new Uri(endpoint), new DefaultAzureCredential());
-    // var agent = client.GetChatClient(deploymentName);
-    
     Console.WriteLine("✓ Agent framework initialized successfully");
     Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
+    Console.WriteLine("Note: This is a demo/mock setup without external AI services");
+    Console.WriteLine("For actual Azure OpenAI or Ollama, see the respective agent examples.\n");
     
     // Run 1000 iterations to measure performance
     for (int i = 0; i < ITERATIONS; i++)

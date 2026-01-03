@@ -1,11 +1,14 @@
 ﻿using System.Diagnostics;
+using Azure.AI.OpenAI;
+using Azure.Identity;
+using Microsoft.Agents.AI;
+using OpenAI.Chat;
 
 Console.WriteLine("=== C# Microsoft Agent Framework - Azure OpenAI Agent ===\n");
 
-// Configuration - Read from environment variables or configuration
+// Configuration - Read from environment variables
 var endpoint = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT");
-var apiKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
-var deploymentName = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT_NAME") ?? "gpt-4";
+var deploymentName = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT_NAME") ?? "gpt-4o-mini";
 
 // Start performance measurement
 var stopwatch = Stopwatch.StartNew();
@@ -17,13 +20,12 @@ var iterationTimes = new List<double>();
 
 try
 {
-    if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey))
+    if (string.IsNullOrEmpty(endpoint))
     {
-        Console.WriteLine("⚠ Configuration not found. Using demo mode.");
+        Console.WriteLine("⚠ AZURE_OPENAI_ENDPOINT not found. Using demo mode.");
         Console.WriteLine("To use Azure OpenAI, set the following environment variables:");
         Console.WriteLine("  - AZURE_OPENAI_ENDPOINT");
-        Console.WriteLine("  - AZURE_OPENAI_API_KEY");
-        Console.WriteLine("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-4')");
+        Console.WriteLine("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-4o-mini')");
         Console.WriteLine($"\n✓ Agent framework structure ready (demo mode)");
         Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
         
@@ -47,26 +49,25 @@ try
     }
     else
     {
-        // For actual Azure OpenAI integration with Microsoft Agent Framework, use:
-        // using Azure.AI.OpenAI;
-        // using Azure.Identity;
-        // 
-        // var client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
-        // var chatClient = client.GetChatClient(deploymentName);
+        // Create agent using Microsoft.Agents.AI with Azure OpenAI
+        AIAgent agent = new AzureOpenAIClient(
+            new Uri(endpoint),
+            new AzureCliCredential())
+            .GetChatClient(deploymentName)
+            .CreateAIAgent(instructions: "You are a helpful assistant. Provide brief, concise responses.", name: "PerformanceTestAgent");
         
         Console.WriteLine("✓ Agent framework initialized successfully");
         Console.WriteLine("✓ Azure OpenAI service configured");
         Console.WriteLine($"✓ Using deployment: {deploymentName}");
         Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
         
-        // For now, run in demo mode since we're focusing on the structure
-        // In production, you would make actual API calls here
+        // Run 1000 iterations with actual API calls
         for (int i = 0; i < ITERATIONS; i++)
         {
             var iterationStart = Stopwatch.GetTimestamp();
             
-            // Simulate agent operation
-            var response = $"Response {i + 1}";
+            // Invoke the agent
+            var response = await agent.RunAsync($"Say hello {i + 1}");
             
             var iterationEnd = Stopwatch.GetTimestamp();
             var iterationTimeMs = (iterationEnd - iterationStart) * 1000.0 / Stopwatch.Frequency;
@@ -77,13 +78,15 @@ try
                 Console.WriteLine($"  Progress: {i + 1}/{ITERATIONS} iterations completed");
             }
         }
+        
+        // Show a sample streaming response
+        Console.WriteLine("\n--- Sample Agent Streaming Response ---");
+        await foreach (var update in agent.RunStreamingAsync("Tell me a brief joke about a pirate."))
+        {
+            Console.Write(update);
+        }
+        Console.WriteLine("\n---------------------------\n");
     }
-    
-    Console.WriteLine("\n--- Sample Agent Response ---");
-    Console.WriteLine("Hello from the Microsoft Agent Framework with Azure OpenAI!");
-    Console.WriteLine("This agent is ready to process requests.");
-    Console.WriteLine("Performance test completed successfully.");
-    Console.WriteLine("---------------------------\n");
     
     // Calculate statistics
     var avgIterationTime = iterationTimes.Average();
