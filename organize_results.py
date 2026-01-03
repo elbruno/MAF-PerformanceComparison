@@ -13,8 +13,6 @@ import os
 import json
 import shutil
 import glob
-import subprocess
-import sys
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
@@ -296,7 +294,8 @@ def detect_llm_provider() -> Optional[str]:
         response = requests.get(f"{ollama_endpoint}/api/tags", timeout=2)
         if response.status_code == 200:
             return "ollama"
-    except Exception:
+    except (requests.RequestException, Exception) as e:
+        # Ollama not available or connection failed
         pass
     
     return None
