@@ -206,9 +206,11 @@ def create_comparison_markdown(
     metrics: List[Dict[str, Any]],
     output_dir: str,
     template_body: str,
+    test_mode: str = "standard",
+    iterations: int = 1000,
 ) -> Tuple[str, List[Tuple[str, str, str]]]:
     """
-    Create comparison_report.md and return its path plus a list of prompts generated.
+    Create comparison_report_{testmode}_{iterations}iter.md and return its path plus a list of prompts generated.
 
     The prompts list contains tuples of (title, prompt_text, test_mode).
     """
@@ -307,7 +309,7 @@ def create_comparison_markdown(
         markdown_lines.extend(["", "---", ""])
 
     markdown_content = "\n".join(markdown_lines)
-    output_file = os.path.join(output_dir, "comparison_report.md")
+    output_file = os.path.join(output_dir, f"comparison_report_{test_mode}_{iterations}iter.md")
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(markdown_content)
@@ -514,9 +516,13 @@ def main() -> int:
     # Reload from current location to ensure paths/filenames are accurate
     reloaded_metrics = [load_metrics_file(path) for path in moved_files if path]
 
+    # Determine test mode and iterations for report naming
+    test_mode = determine_test_mode([path for path in moved_files if path])
+    iterations = determine_iterations(reloaded_metrics)
+
     template_body = load_comparison_template()
     print("Generating comparison report...")
-    comparison_file, prompts = create_comparison_markdown(reloaded_metrics, destination_folder, template_body)
+    comparison_file, prompts = create_comparison_markdown(reloaded_metrics, destination_folder, template_body, test_mode, iterations)
     print(f"  ✓ Created: {os.path.basename(comparison_file)}")
     print()
 
