@@ -20,21 +20,25 @@ The fastest way to get started is using Ollama with local models:
 ### Run Tests
 
 **PowerShell (Windows):**
+
 ```powershell
 .\run_tests.ps1
 ```
 
 **Bash (Linux/Mac):**
+
 ```bash
 ./run_tests.sh
 ```
 
 **Command Prompt (Windows):**
+
 ```cmd
 run_tests.bat
 ```
 
 These scripts will:
+
 - Run performance tests for both .NET and Python implementations
 - Use Ollama by default (10 iterations)
 - Export metrics to JSON files for analysis
@@ -51,6 +55,7 @@ These scripts will:
 ```
 
 **Bash:**
+
 ```bash
 # Run with 1000 iterations in different test modes
 ITERATIONS=1000 TEST_MODE=standard ./run_tests.sh
@@ -77,6 +82,7 @@ python organize_results.py
 ```
 
 This will:
+
 - Create timestamped folders in `tests_results/`
 - Move all metrics files to organized folders
 - Generate comparison reports
@@ -102,6 +108,7 @@ This will:
 ## Learn More
 
 For detailed information, advanced configuration, and troubleshooting:
+
 - [Detailed Guide](docs/DETAILED_GUIDE.md) - Comprehensive documentation
 - [Scripts Documentation](docs/SCRIPTS_README.md) - Test automation details
 - [Comparison Template](docs/comparison_prompt_template.md) - LLM analysis prompts
@@ -116,4 +123,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Agent Framework Python GitHub](https://github.com/microsoft/agent-framework/tree/main/python)
 - [Agent Framework .NET GitHub](https://github.com/microsoft/agent-framework/tree/main/dotnet)
 - [Ollama](https://ollama.ai/)
-

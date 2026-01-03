@@ -139,7 +139,7 @@ python main.py
 
 ## Performance Metrics
 
-Each application automatically runs **1000 iterations** (configurable) of agent operations to measure performance accurately. 
+Each application automatically runs **1000 iterations** (configurable) of agent operations to measure performance accurately.
 
 ### Warmup Phase
 
@@ -254,6 +254,7 @@ The project includes a comprehensive comparison prompt template that enables eas
 **Quick Start:**
 
 1. **Run performance tests** for the implementations you want to compare:
+
    ```bash
    # Example: Compare .NET vs Python for Ollama
    cd dotnet/OllamaAgent && dotnet run
@@ -391,6 +392,7 @@ Configure test behavior using environment variables:
 All agents now export comprehensive metrics including:
 
 #### Core Metrics
+
 - Total iterations completed
 - Total execution time
 - Average, min, max, and median latency
@@ -399,6 +401,7 @@ All agents now export comprehensive metrics including:
 - **CPU utilization (%)** - Cross-platform monitoring
 
 #### Advanced Metrics
+
 - **Time-to-first-token (TTFT)** - In streaming mode
 - **Scenario-specific performance** - In scenarios mode
 - **Batch throughput** - In batch mode
@@ -450,6 +453,7 @@ Enhanced JSON structure with comprehensive data:
 ### Example Usage
 
 #### Run Standard Performance Test
+
 ```bash
 # .NET
 cd dotnet/AzureOpenAIAgent
@@ -461,6 +465,7 @@ ITERATIONS=1000 python main.py
 ```
 
 #### Test Batch Processing
+
 ```bash
 # .NET - Process in batches of 20
 cd dotnet/OllamaAgent
@@ -472,6 +477,7 @@ TEST_MODE=batch BATCH_SIZE=15 ITERATIONS=100 python main.py
 ```
 
 #### Test Concurrent Requests
+
 ```bash
 # .NET - 10 concurrent requests
 TEST_MODE=concurrent CONCURRENT_REQUESTS=10 ITERATIONS=50 dotnet run
@@ -481,6 +487,7 @@ TEST_MODE=concurrent CONCURRENT_REQUESTS=8 ITERATIONS=50 python main.py
 ```
 
 #### Test Streaming with TTFT
+
 ```bash
 # Measure time-to-first-token in streaming responses
 TEST_MODE=streaming ITERATIONS=100 dotnet run
@@ -488,6 +495,7 @@ TEST_MODE=streaming ITERATIONS=100 python main.py
 ```
 
 #### Comprehensive Scenario Testing
+
 ```bash
 # Test multiple prompt types (200 iterations each)
 TEST_MODE=scenarios dotnet run
@@ -528,12 +536,14 @@ TEST_MODE=concurrent CONCURRENT_REQUESTS=10 AGENT_TYPE=All ./run_tests.sh
 ```
 
 The scripts automatically:
+
 - Run both .NET and Python implementations
 - Export metrics to JSON files
 - Support all test modes (standard, batch, concurrent, streaming, scenarios)
 - Handle agent-specific configuration
 
 After running tests, use `organize_results.py` to:
+
 - Create timestamped folders in `tests_results/`
 - Move all metrics files to organized folders
 - Generate comparison markdown with LLM-ready prompts
