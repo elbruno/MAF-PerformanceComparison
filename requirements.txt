@@ -1,7 +1,15 @@
-# Requirements for process_results_ollama.py
+# Python Requirements for MAF-PerformanceComparison
+# Consolidated requirements for all Python projects in this repository
 
-# For loading environment variables
-python-dotenv>=1.0.0
+# Core Agent Framework packages
+agent-framework-core[all]==1.0.0b251223
+agent-framework-ollama
+agent-framework-azure
 
-# For making HTTP requests (Ollama)
+# Azure dependencies
+azure-identity==1.19.0
+
+# Utility packages
+psutil>=6.1.1
+python-dotenv>=1.0.1
 requests>=2.31.0
