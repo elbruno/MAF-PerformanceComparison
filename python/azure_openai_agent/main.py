@@ -5,7 +5,7 @@ import time
 import psutil
 from random import randint
 from typing import Annotated
-from datetime import datetime
+from datetime import datetime, timezone
 
 from agent_framework.azure import AzureAIClient
 from azure.identity.aio import AzureCliCredential
@@ -44,8 +44,8 @@ async def run_performance_test() -> None:
     process = psutil.Process(os.getpid())
     start_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
     
-    # Performance test: Run agent operations 1000 times
-    ITERATIONS = 1000
+    # Performance test: Run agent operations. Make configurable via environment variable for easier testing.
+    ITERATIONS = int(os.getenv("ITERATIONS", "1000"))
     iteration_times = []
     warmup_successful = False
     
@@ -155,7 +155,7 @@ async def run_performance_test() -> None:
             "Provider": "AzureOpenAI",
             "Model": deployment_name,
             "Endpoint": endpoint or "N/A (Demo Mode)",
-            "Timestamp": datetime.utcnow().isoformat() + "Z",
+            "Timestamp": datetime.now(timezone.utc).isoformat(),
             "WarmupSuccessful": warmup_successful
         },
         "Metrics": {
@@ -168,7 +168,7 @@ async def run_performance_test() -> None:
         }
     }
     
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     output_filename = f"metrics_python_azureopenai_{timestamp}.json"
     with open(output_filename, 'w') as f:
         json.dump(metrics_data, f, indent=2)

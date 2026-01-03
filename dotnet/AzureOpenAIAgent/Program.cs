@@ -15,8 +15,8 @@ var deploymentName = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT
 var stopwatch = Stopwatch.StartNew();
 var startMemory = GC.GetTotalMemory(true);
 
-// Performance test: Run agent operations 1000 times
-const int ITERATIONS = 1000;
+// Performance test: Run agent operations. Make configurable via environment variable for easier testing.
+var ITERATIONS = int.TryParse(Environment.GetEnvironmentVariable("ITERATIONS"), out var iters) ? iters : 1000;
 var iterationTimes = new List<double>();
 var warmupSuccessful = false;
 

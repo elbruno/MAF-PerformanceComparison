@@ -3,7 +3,7 @@ import json
 import os
 import time
 import psutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
@@ -47,8 +47,8 @@ async def run_performance_test() -> None:
     process = psutil.Process(os.getpid())
     start_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
     
-    # Performance test: Run agent operations 1000 times
-    ITERATIONS = 1000
+    # Performance test: Run agent operations. Make configurable via environment variable for easier testing.
+    ITERATIONS = int(os.getenv("ITERATIONS", "1000"))
     iteration_times = []
     warmup_successful = False
     
@@ -154,7 +154,7 @@ async def run_performance_test() -> None:
             "Provider": "Ollama",
             "Model": model_name,
             "Endpoint": endpoint,
-            "Timestamp": datetime.utcnow().isoformat() + "Z",
+            "Timestamp": datetime.now(timezone.utc).isoformat(),
             "WarmupSuccessful": warmup_successful
         },
         "Metrics": {
@@ -167,7 +167,7 @@ async def run_performance_test() -> None:
         }
     }
     
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     output_filename = f"metrics_python_ollama_{timestamp}.json"
     with open(output_filename, 'w') as f:
         json.dump(metrics_data, f, indent=2)
