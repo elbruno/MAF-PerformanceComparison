@@ -344,8 +344,10 @@ def analyze_prompts(
     output_dir: str,
     endpoint: str,
     model: str,
+    test_mode: str = "standard",
+    iterations: int = 1000,
 ) -> Optional[str]:
-    """Run Ollama analysis for each prompt and store in analysis_report.md."""
+    """Run Ollama analysis for each prompt and store in analysis_report_{testmode}_{iterations}iter.md."""
 
     if not prompts:
         return None
@@ -373,7 +375,7 @@ def analyze_prompts(
         analysis_lines.extend(["", "---", ""])
 
     analysis_content = "\n".join(analysis_lines)
-    analysis_file = os.path.join(output_dir, "analysis_report.md")
+    analysis_file = os.path.join(output_dir, f"analysis_report_{test_mode}_{iterations}iter.md")
 
     with open(analysis_file, "w", encoding="utf-8") as f:
         f.write(analysis_content)
@@ -529,7 +531,7 @@ def main() -> int:
     endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
     model = pick_ollama_model(reloaded_metrics)
     print(f"Analyzing comparison prompts with Ollama model '{model}' at {endpoint}...")
-    analysis_file = analyze_prompts(prompts, destination_folder, endpoint, model)
+    analysis_file = analyze_prompts(prompts, destination_folder, endpoint, model, test_mode, iterations)
     if analysis_file:
         print(f"  ✓ Created: {os.path.basename(analysis_file)}")
     else:
