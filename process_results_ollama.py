@@ -426,37 +426,20 @@ def determine_iterations(metrics: List[Dict[str, Any]]) -> int:
     return 1000
 
 
-def move_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
-    """Move metrics files into the destination folder and return their new paths."""
+def copy_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
+    """Copy metrics files into the destination folder and return their new paths."""
 
-    moved_files: List[str] = []
+    copied_files: List[str] = []
     for metrics_file in metrics_files:
         basename = os.path.basename(metrics_file)
         dest_path = os.path.join(destination, basename)
         try:
-            shutil.move(metrics_file, dest_path)
-            moved_files.append(dest_path)
-            print(f"  ✓ Moved: {basename}")
+            shutil.copy2(metrics_file, dest_path)
+            copied_files.append(dest_path)
+            print(f"  ✓ Copied: {basename}")
         except Exception as exc:
-            print(f"  ✗ Failed to move {basename}: {exc}")
-    return moved_files
-
-
-def reuse_existing_folder_if_present(metrics_files: List[str]) -> Optional[str]:
-    """
-    If metrics are already in tests_results/*, reuse that folder to avoid re-moving files.
-
-    Returns the folder path if all metrics reside in the same tests_results subfolder.
-    """
-
-    if not metrics_files:
-        return None
-
-    parent_dirs = {os.path.dirname(path) for path in metrics_files if "tests_results" in os.path.normpath(path).split(os.sep)}
-    if len(parent_dirs) == 1:
-        return parent_dirs.pop()
-
-    return None
+            print(f"  ✗ Failed to copy {basename}: {exc}")
+    return copied_files
 
 
 def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
@@ -497,29 +480,22 @@ def main() -> int:
         print("No Ollama metrics found. Ensure provider is Ollama in your tests.")
         return 1
 
-    # Determine if metrics are already organized inside tests_results
-    existing_folder = reuse_existing_folder_if_present([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
-    if existing_folder:
-        destination_folder = existing_folder
-        print(f"Reusing existing organized folder: {destination_folder}")
-        moved_files = [m.get("_filepath") for m in ollama_metrics if m.get("_filepath")]
-    else:
-        # Determine destination folder based on most recent file's test mode and iterations
-        test_mode = determine_test_mode([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
-        iterations = determine_iterations(ollama_metrics)
-        destination_folder = ensure_results_folder(test_mode, iterations)
-        print(f"Created folder: {destination_folder}")
-        print()
+    # Determine destination folder based on most recent file's test mode and iterations
+    test_mode = determine_test_mode([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
+    iterations = determine_iterations(ollama_metrics)
+    destination_folder = ensure_results_folder(test_mode, iterations)
+    print(f"Created folder: {destination_folder}")
+    print()
 
-        print("Moving metrics files...")
-        moved_files = move_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
-        print()
+    print("Copying metrics files...")
+    copied_files = copy_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
+    print()
 
     # Reload from current location to ensure paths/filenames are accurate
-    reloaded_metrics = [load_metrics_file(path) for path in moved_files if path]
+    reloaded_metrics = [load_metrics_file(path) for path in copied_files if path]
 
     # Determine test mode and iterations for report naming
-    test_mode = determine_test_mode([path for path in moved_files if path])
+    test_mode = determine_test_mode([path for path in copied_files if path])
     iterations = determine_iterations(reloaded_metrics)
 
     template_body = load_comparison_template()
@@ -543,7 +519,7 @@ def main() -> int:
     print("=" * 60)
     print()
     print(f"Results location: {destination_folder}")
-    print(f"Files moved: {len(moved_files)}")
+    print(f"Files copied: {len(copied_files)}")
     print(f"Comparison report: {comparison_file}")
     if analysis_file:
         print(f"Analysis report: {analysis_file}")
