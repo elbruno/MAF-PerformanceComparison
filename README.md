@@ -9,7 +9,6 @@ This project compares the performance and resource usage of Microsoft Agent Fram
 ## Project Structure
 
 ```
-srcMAFPerformance/
 ├── dotnet/
 │   ├── HelloWorldAgent/           # Basic C# agent (demo/mock mode)
 │   │   ├── Program.cs
@@ -39,8 +38,8 @@ srcMAFPerformance/
 ## Prerequisites
 
 ### For .NET (C#)
-- .NET 8.0 SDK or later
-- Azure.AI.OpenAI NuGet package (automatically installed)
+- .NET 10.0 SDK or later
+- Microsoft.Agents.AI NuGet package (automatically installed)
 - Azure.Identity NuGet package (for authentication)
 
 ### For Python
@@ -67,14 +66,14 @@ These agents demonstrate the framework structure without requiring external serv
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/HelloWorldAgent
+cd dotnet/HelloWorldAgent
 dotnet build
 dotnet run
 ```
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/hello_world_agent
+cd python/hello_world_agent
 pip install -r requirements.txt
 python main.py
 ```
@@ -92,7 +91,7 @@ python main.py
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/AzureOpenAIAgent
+cd dotnet/AzureOpenAIAgent
 # Create .env file with your credentials
 dotnet build
 dotnet run
@@ -100,7 +99,7 @@ dotnet run
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/azure_openai_agent
+cd python/azure_openai_agent
 # Create .env file with your credentials
 pip install -r requirements.txt
 python main.py
@@ -116,14 +115,14 @@ python main.py
 
 **C# Version:**
 ```bash
-cd srcMAFPerformance/dotnet/OllamaAgent
+cd dotnet/OllamaAgent
 dotnet build
 dotnet run
 ```
 
 **Python Version:**
 ```bash
-cd srcMAFPerformance/python/ollama_agent
+cd python/ollama_agent
 pip install -r requirements.txt
 python main.py
 ```
