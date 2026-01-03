@@ -4,7 +4,7 @@ Performance comparison of Microsoft Agent Framework implementations in Python vs
 
 ## Overview
 
-This project compares the performance and resource usage of Microsoft Agent Framework (based on Semantic Kernel) implementations across different programming languages and AI service providers.
+This project compares the performance and resource usage of Microsoft Agent Framework implementations across different programming languages and AI service providers. The framework provides a unified approach to building AI agents with advanced capabilities for orchestration, tool calling, and multi-agent workflows.
 
 ## Project Structure
 
@@ -40,13 +40,15 @@ srcMAFPerformance/
 
 ### For .NET (C#)
 - .NET 8.0 SDK or later
-- Microsoft.SemanticKernel NuGet package (automatically installed)
+- Azure.AI.OpenAI NuGet package (automatically installed)
+- Azure.Identity NuGet package (for authentication)
 
 ### For Python
-- Python 3.12 or later
-- semantic-kernel package
+- Python 3.10 or later
+- agent-framework or agent-framework-core package
 - psutil package (for performance measurement)
 - python-dotenv package (for configuration)
+- azure-ai-inference package (for Azure OpenAI integration)
 
 ### For Azure OpenAI Integration
 - Azure OpenAI Service resource
@@ -128,14 +130,23 @@ python main.py
 
 ## Performance Metrics
 
-Each application automatically measures and reports:
-- **Execution Time**: Time from initialization to completion (milliseconds)
+Each application automatically runs **1000 iterations** of agent operations to measure performance accurately. The following metrics are collected and reported:
+
+- **Total Iterations**: Number of agent operations performed (1000)
+- **Total Execution Time**: Time from initialization to completion (milliseconds)
+- **Average Time per Iteration**: Mean execution time per agent operation (milliseconds)
+- **Min Iteration Time**: Fastest iteration time (milliseconds)
+- **Max Iteration Time**: Slowest iteration time (milliseconds)
 - **Memory Usage**: RAM consumed during execution (MB)
 
 Example output:
 ```
 === Performance Metrics ===
-Execution Time: 1245 ms
+Total Iterations: 1000
+Total Execution Time: 1245 ms
+Average Time per Iteration: 1.234 ms
+Min Iteration Time: 0.985 ms
+Max Iteration Time: 2.156 ms
 Memory Used: 3.45 MB
 ========================
 ```
@@ -163,32 +174,41 @@ Set these environment variables or create a `.env` file (optional - defaults pro
 
 ## Features
 
-- ✅ **Basic Hello World Agents**: Simple implementations in C# and Python
+- ✅ **Basic Hello World Agents**: Simple implementations in C# and Python with 1000-iteration performance testing
 - ✅ **Azure OpenAI Integration**: Cloud-based AI service integration
 - ✅ **Ollama Integration**: Local model support for privacy and offline use
-- ✅ **Automatic Performance Metrics**: Built-in time and memory tracking
+- ✅ **Comprehensive Performance Metrics**: Built-in time and memory tracking with statistical analysis
 - ✅ **Cross-platform**: Works on Windows, Linux, and macOS
 - ✅ **Configuration via Environment Variables**: Easy setup with `.env` files
+- ✅ **1000-Iteration Testing**: Statistically significant performance measurements
 
 ## Comparing Performance
 
 To compare performance between implementations:
 
 1. **Run the same scenario** in both C# and Python
-2. **Compare the metrics** shown at the end of each run
+2. **Compare the metrics** shown at the end of each run, focusing on:
+   - Total execution time for 1000 iterations
+   - Average time per iteration
+   - Memory usage patterns
 3. **Consider factors** like:
    - Cold start vs. warm start
    - Model complexity
    - Network latency (for Azure OpenAI)
    - Hardware specifications
+   - Language runtime differences (JIT compilation, GC behavior, etc.)
+
+The 1000-iteration approach provides statistically significant results by averaging out transient performance fluctuations.
 
 ## Architecture
 
 Both C# and Python implementations use:
-- **Microsoft Semantic Kernel**: The foundation of the Microsoft Agent Framework
+- **Microsoft Agent Framework**: A modern framework for building production-ready AI agents
+- **Unified Agent Model**: Consistent patterns across languages for reasoning, memory, and tool integration
 - **Modular Design**: Easy to add new scenarios or providers
-- **Performance Monitoring**: Built-in metrics collection
+- **Performance Monitoring**: Built-in metrics collection with 1000-iteration testing
 - **Error Handling**: Graceful degradation when services are unavailable
+- **Provider Agnostic**: Support for Azure OpenAI, OpenAI, Ollama, and other providers
 
 ## Troubleshooting
 
@@ -232,7 +252,9 @@ Contributions are welcome! Areas of interest:
 
 ## Resources
 
-- [Microsoft Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
+- [Microsoft Agent Framework Documentation](https://learn.microsoft.com/en-us/agent-framework/)
+- [Agent Framework Python GitHub](https://github.com/microsoft/agent-framework/tree/main/python)
+- [Agent Framework .NET GitHub](https://github.com/microsoft/agent-framework/tree/main/dotnet)
 - [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
 - [Ollama](https://ollama.ai/)
 - [.NET SDK](https://dotnet.microsoft.com/download)
