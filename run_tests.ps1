@@ -89,8 +89,14 @@ function Run-PythonTest {
         $env:BATCH_SIZE = $BatchSize
         $env:CONCURRENT_REQUESTS = $ConcurrentRequests
         
-        # Run Python test
-        python main.py
+        # Run Python test (use python3 if available, fallback to python)
+        if (Get-Command python3 -ErrorAction SilentlyContinue) {
+            python3 main.py
+        } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+            py main.py
+        } else {
+            python main.py
+        }
         
         Write-ColorOutput "✓ Python $AgentName test completed" "Green"
         Write-Host ""

@@ -16,6 +16,10 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 
+# Constants
+DEFAULT_TEST_MODE = "standard"
+
+
 def find_metrics_files(search_dir: str = ".") -> List[str]:
     """Find all metrics JSON files in the specified directory and subdirectories."""
     patterns = [
@@ -40,7 +44,7 @@ def parse_metrics_filename(filename: str) -> Dict[str, str]:
     info = {
         "language": parts[0] if len(parts) > 0 else "unknown",
         "provider": parts[1] if len(parts) > 1 else "unknown",
-        "test_mode": "standard",
+        "test_mode": DEFAULT_TEST_MODE,
         "timestamp": ""
     }
     
@@ -63,7 +67,12 @@ def load_metrics_file(filepath: str) -> Dict[str, Any]:
     """Load and return the contents of a metrics JSON file."""
     try:
         with open(filepath, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+            # Create a copy and add metadata fields
+            result = data.copy()
+            result["_filename"] = os.path.basename(filepath)
+            result["_filepath"] = filepath
+            return result
     except Exception as e:
         print(f"Warning: Could not load {filepath}: {e}")
         return {}
@@ -77,8 +86,6 @@ def create_comparison_markdown(metrics_files: List[str], output_dir: str) -> str
     for filepath in metrics_files:
         data = load_metrics_file(filepath)
         if data:
-            data["_filename"] = os.path.basename(filepath)
-            data["_filepath"] = filepath
             all_metrics.append(data)
     
     if len(all_metrics) < 2:
@@ -89,7 +96,7 @@ def create_comparison_markdown(metrics_files: List[str], output_dir: str) -> str
     grouped = {}
     for metrics in all_metrics:
         test_info = metrics.get("TestInfo", {})
-        test_mode = test_info.get("TestMode", "standard")
+        test_mode = test_info.get("TestMode", DEFAULT_TEST_MODE)
         provider = test_info.get("Provider", "unknown")
         language = test_info.get("Language", "unknown")
         
@@ -114,83 +121,86 @@ def create_comparison_markdown(metrics_files: List[str], output_dir: str) -> str
     
     # Add comparison prompts for each group
     for group_key, group_data in grouped.items():
-        if len(group_data) >= 2:
-            # Get the two implementations to compare
-            languages = list(group_data.keys())
-            first_lang = languages[0]
-            second_lang = languages[1] if len(languages) > 1 else languages[0]
+        # Only create comparison if we have at least 2 different languages
+        if len(group_data) < 2:
+            continue
             
-            first_metrics = group_data[first_lang]
-            second_metrics = group_data[second_lang] if len(languages) > 1 else first_metrics
-            
-            provider = first_metrics.get("TestInfo", {}).get("Provider", "unknown")
-            test_mode = first_metrics.get("TestInfo", {}).get("TestMode", "standard")
-            
-            markdown_lines.extend([
-                f"### Comparison: {provider} - {test_mode} mode",
-                "",
-                "#### Files Analyzed",
-                f"- {first_metrics['_filename']}",
-                f"- {second_metrics['_filename']}",
-                "",
-                "#### LLM Comparison Prompt",
-                "",
-                "```",
-                "I have two performance test results from running the Microsoft Agent Framework in different environments. Please analyze and compare these results.",
-                "",
-                "**First Test Result:**",
-                "```json",
-                json.dumps(first_metrics, indent=2),
-                "```",
-                "",
-                "**Second Test Result:**",
-                "```json",
-                json.dumps(second_metrics, indent=2),
-                "```",
-                "",
-                "Please provide a comprehensive comparison that includes:",
-                "",
-                "1. **Test Configuration Comparison:**",
-                "   - Language/Framework used (C#/.NET vs Python)",
-                "   - AI Provider and Model",
-                "   - Test mode and configuration",
-                "   - Warmup status",
-                "   - Test timestamp",
-                "",
-                "2. **Performance Metrics Analysis:**",
-                "   - Total execution time comparison (which is faster and by what percentage?)",
-                "   - Average time per iteration (which has better average performance?)",
-                "   - Min/Max iteration times (which has more consistent performance?)",
-                "   - Performance variability (compare min/max ranges)",
-                "   - Standard deviation analysis",
-                "",
-                "3. **Resource Usage:**",
-                "   - Memory consumption comparison",
-                "   - CPU utilization comparison",
-                "   - Efficiency analysis (performance vs resource usage)",
-                "",
-                "4. **Test Mode Specific Metrics:**",
-                "   - Batch processing efficiency (if applicable)",
-                "   - Concurrent request handling (if applicable)",
-                "   - Streaming performance and TTFT (if applicable)",
-                "   - Scenario-specific results (if applicable)",
-                "",
-                "5. **Key Insights:**",
-                "   - Which implementation performs better overall?",
-                "   - What are the notable differences?",
-                "   - Any recommendations based on the results?",
-                "",
-                "6. **Statistical Summary:**",
-                "   - Provide a clear winner or note if results are comparable",
-                "   - Highlight any significant performance gaps",
-                "   - Consider both speed and resource efficiency",
-                "",
-                "Please format your response in a clear, structured way with percentages and concrete numbers for easy understanding.",
-                "```",
-                "",
-                "---",
-                ""
-            ])
+        # Get the two implementations to compare
+        languages = sorted(list(group_data.keys()))  # Sort for consistency
+        first_lang = languages[0]
+        second_lang = languages[1]
+        
+        first_metrics = group_data[first_lang]
+        second_metrics = group_data[second_lang]
+        
+        provider = first_metrics.get("TestInfo", {}).get("Provider", "unknown")
+        test_mode = first_metrics.get("TestInfo", {}).get("TestMode", DEFAULT_TEST_MODE)
+        
+        markdown_lines.extend([
+            f"### Comparison: {provider} - {test_mode} mode",
+            "",
+            "#### Files Analyzed",
+            f"- {first_metrics['_filename']}",
+            f"- {second_metrics['_filename']}",
+            "",
+            "#### LLM Comparison Prompt",
+            "",
+            "```",
+            "I have two performance test results from running the Microsoft Agent Framework in different environments. Please analyze and compare these results.",
+            "",
+            "**First Test Result:**",
+            "```json",
+            json.dumps(first_metrics, indent=2),
+            "```",
+            "",
+            "**Second Test Result:**",
+            "```json",
+            json.dumps(second_metrics, indent=2),
+            "```",
+            "",
+            "Please provide a comprehensive comparison that includes:",
+            "",
+            "1. **Test Configuration Comparison:**",
+            "   - Language/Framework used (C#/.NET vs Python)",
+            "   - AI Provider and Model",
+            "   - Test mode and configuration",
+            "   - Warmup status",
+            "   - Test timestamp",
+            "",
+            "2. **Performance Metrics Analysis:**",
+            "   - Total execution time comparison (which is faster and by what percentage?)",
+            "   - Average time per iteration (which has better average performance?)",
+            "   - Min/Max iteration times (which has more consistent performance?)",
+            "   - Performance variability (compare min/max ranges)",
+            "   - Standard deviation analysis",
+            "",
+            "3. **Resource Usage:**",
+            "   - Memory consumption comparison",
+            "   - CPU utilization comparison",
+            "   - Efficiency analysis (performance vs resource usage)",
+            "",
+            "4. **Test Mode Specific Metrics:**",
+            "   - Batch processing efficiency (if applicable)",
+            "   - Concurrent request handling (if applicable)",
+            "   - Streaming performance and TTFT (if applicable)",
+            "   - Scenario-specific results (if applicable)",
+            "",
+            "5. **Key Insights:**",
+            "   - Which implementation performs better overall?",
+            "   - What are the notable differences?",
+            "   - Any recommendations based on the results?",
+            "",
+            "6. **Statistical Summary:**",
+            "   - Provide a clear winner or note if results are comparable",
+            "   - Highlight any significant performance gaps",
+            "   - Consider both speed and resource efficiency",
+            "",
+            "Please format your response in a clear, structured way with percentages and concrete numbers for easy understanding.",
+            "```",
+            "",
+            "---",
+            ""
+        ])
     
     # Add individual test summaries
     markdown_lines.extend([
@@ -203,7 +213,7 @@ def create_comparison_markdown(metrics_files: List[str], output_dir: str) -> str
         metrics_data = metrics.get("Metrics", {})
         
         markdown_lines.extend([
-            f"### {test_info.get('Language', 'Unknown')} - {test_info.get('Provider', 'Unknown')} - {test_info.get('TestMode', 'standard')}",
+            f"### {test_info.get('Language', 'Unknown')} - {test_info.get('Provider', 'Unknown')} - {test_info.get('TestMode', DEFAULT_TEST_MODE)}",
             "",
             f"**File:** `{metrics['_filename']}`",
             "",

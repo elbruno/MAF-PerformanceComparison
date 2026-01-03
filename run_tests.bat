@@ -113,7 +113,19 @@ set agent_name=%~2
 echo Running Python %agent_name% test...
 cd /d "%agent_dir%"
 
-python main.py
+REM Try python3 first, then py, then python
+where python3 >nul 2>&1
+if %ERRORLEVEL%==0 (
+    python3 main.py
+) else (
+    where py >nul 2>&1
+    if %ERRORLEVEL%==0 (
+        py main.py
+    ) else (
+        python main.py
+    )
+)
+
 echo + Python %agent_name% test completed
 echo.
 
