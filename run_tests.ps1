@@ -174,5 +174,11 @@ Write-ColorOutput "All tests completed successfully!" "Green"
 Write-ColorOutput "============================================" "Green"
 Write-Host ""
 Write-ColorOutput "Next steps:" "Cyan"
-Write-Host "1. Run: python organize_results.py"
+if (Get-Command python3 -ErrorAction SilentlyContinue) {
+    Write-Host "1. Run: python3 organize_results.py"
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+    Write-Host "1. Run: py organize_results.py"
+} else {
+    Write-Host "1. Run: python organize_results.py"
+}
 Write-Host "2. Check the tests_results\ folder for organized results"

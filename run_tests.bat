@@ -82,7 +82,17 @@ echo All tests completed successfully!
 echo ============================================
 echo.
 echo Next steps:
-echo 1. Run: python organize_results.py
+where python3 >nul 2>&1
+if %ERRORLEVEL%==0 (
+    echo 1. Run: python3 organize_results.py
+) else (
+    where py >nul 2>&1
+    if %ERRORLEVEL%==0 (
+        echo 1. Run: py organize_results.py
+    ) else (
+        echo 1. Run: python organize_results.py
+    )
+)
 echo 2. Check the tests_results\ folder for organized results
 goto :eof
 

@@ -322,6 +322,7 @@ def main():
     print()
     
     # Create comparison markdown
+    markdown_file = None
     if moved_files:
         print("Generating comparison report...")
         markdown_file = create_comparison_markdown(moved_files, new_folder)
