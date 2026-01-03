@@ -337,15 +337,185 @@ Both C# and Python implementations use:
 
 - **Solution**: Pull the model first: `ollama pull ministral-3`
 
-## Next Steps
+## Advanced Features
 
-- [ ] Add comprehensive benchmarking scenarios
-- [ ] Implement batch processing tests
-- [ ] Add CPU utilization monitoring
-- [ ] Create automated comparison reports
-- [ ] Add more AI service providers (OpenAI, Anthropic, etc.)
-- [ ] Implement streaming response tests
-- [ ] Add concurrent request handling tests
+### Test Modes
+
+All agents now support multiple test modes for comprehensive performance analysis:
+
+#### Environment Variables
+
+Configure test behavior using environment variables:
+
+| Variable | Description | Default | Values |
+|----------|-------------|---------|--------|
+| `TEST_MODE` | Test execution mode | `standard` | `standard`, `batch`, `concurrent`, `streaming`, `scenarios` |
+| `ITERATIONS` | Number of test iterations | `1000` | Any positive integer |
+| `BATCH_SIZE` | Batch size for batch mode | `10` | Any positive integer |
+| `CONCURRENT_REQUESTS` | Concurrent requests count | `5` | Any positive integer |
+
+#### Test Mode Descriptions
+
+1. **Standard Mode** (`TEST_MODE=standard`)
+   - Sequential execution of requests
+   - Baseline performance measurement
+   - Default behavior
+
+2. **Batch Processing Mode** (`TEST_MODE=batch`)
+   - Processes requests in batches
+   - Measures batch throughput
+   - Configurable batch size via `BATCH_SIZE`
+   - Example: `TEST_MODE=batch BATCH_SIZE=20 ITERATIONS=100 dotnet run`
+
+3. **Concurrent Mode** (`TEST_MODE=concurrent`)
+   - Multiple requests executed concurrently
+   - Uses `Task.WhenAll` (.NET) and `asyncio.gather` (Python)
+   - Configurable concurrency via `CONCURRENT_REQUESTS`
+   - Example: `TEST_MODE=concurrent CONCURRENT_REQUESTS=10 ITERATIONS=50 python main.py`
+
+4. **Streaming Mode** (`TEST_MODE=streaming`)
+   - Measures streaming response performance
+   - Includes time-to-first-token (TTFT) metrics
+   - Demonstrates real-time response capabilities
+   - Example: `TEST_MODE=streaming ITERATIONS=100 dotnet run`
+
+5. **Scenarios Mode** (`TEST_MODE=scenarios`)
+   - Tests multiple prompt types:
+     - Simple: Basic greetings
+     - Medium: Conceptual questions
+     - Long output: Detailed explanations
+     - Reasoning: Logic problems
+     - Conceptual: Technical comparisons
+   - Runs 200 iterations per scenario
+   - Provides comparative analysis across prompt types
+   - Example: `TEST_MODE=scenarios python main.py`
+
+### Enhanced Metrics
+
+All agents now export comprehensive metrics including:
+
+#### Core Metrics
+- Total iterations completed
+- Total execution time
+- Average, min, max, and median latency
+- Standard deviation
+- Memory usage (MB)
+- **CPU utilization (%)** - Cross-platform monitoring
+
+#### Advanced Metrics
+- **Time-to-first-token (TTFT)** - In streaming mode
+- **Scenario-specific performance** - In scenarios mode
+- **Batch throughput** - In batch mode
+- **Concurrent request latency** - In concurrent mode
+
+#### Metrics Export Format
+
+Enhanced JSON structure with comprehensive data:
+
+```json
+{
+  "TestInfo": {
+    "Language": "CSharp|Python",
+    "Framework": "DotNet|Python",
+    "Provider": "AzureOpenAI|Ollama|HelloWorld",
+    "Model": "gpt-5-mini",
+    "TestMode": "standard|batch|concurrent|streaming|scenarios",
+    "Timestamp": "2026-01-03T12:34:56.789Z",
+    "WarmupSuccessful": true
+  },
+  "Configuration": {
+    "BatchSize": 10,
+    "ConcurrentRequests": 5
+  },
+  "Metrics": {
+    "TotalIterations": 1000,
+    "TotalExecutionTimeMs": 12345,
+    "AverageTimePerIterationMs": 12.345,
+    "MinIterationTimeMs": 8.123,
+    "MaxIterationTimeMs": 45.678,
+    "MedianIterationTimeMs": 11.234,
+    "StandardDeviationMs": 3.456,
+    "MemoryUsedMB": 45.67,
+    "AverageCpuUsagePercent": 23.45,
+    "TimeToFirstTokenMs": 156.78,
+    "ScenarioResults": {
+      "simple": {
+        "AverageMs": 10.5,
+        "MinMs": 8.2,
+        "MaxMs": 15.3,
+        "MedianMs": 10.1
+      }
+    }
+  },
+  "Summary": "Test completed in standard mode. Processed 1000 iterations..."
+}
+```
+
+### Example Usage
+
+#### Run Standard Performance Test
+```bash
+# .NET
+cd dotnet/AzureOpenAIAgent
+ITERATIONS=1000 dotnet run
+
+# Python
+cd python/azure_openai_agent  
+ITERATIONS=1000 python main.py
+```
+
+#### Test Batch Processing
+```bash
+# .NET - Process in batches of 20
+cd dotnet/OllamaAgent
+TEST_MODE=batch BATCH_SIZE=20 ITERATIONS=100 dotnet run
+
+# Python - Process in batches of 15
+cd python/ollama_agent
+TEST_MODE=batch BATCH_SIZE=15 ITERATIONS=100 python main.py
+```
+
+#### Test Concurrent Requests
+```bash
+# .NET - 10 concurrent requests
+TEST_MODE=concurrent CONCURRENT_REQUESTS=10 ITERATIONS=50 dotnet run
+
+# Python - 8 concurrent requests  
+TEST_MODE=concurrent CONCURRENT_REQUESTS=8 ITERATIONS=50 python main.py
+```
+
+#### Test Streaming with TTFT
+```bash
+# Measure time-to-first-token in streaming responses
+TEST_MODE=streaming ITERATIONS=100 dotnet run
+TEST_MODE=streaming ITERATIONS=100 python main.py
+```
+
+#### Comprehensive Scenario Testing
+```bash
+# Test multiple prompt types (200 iterations each)
+TEST_MODE=scenarios dotnet run
+TEST_MODE=scenarios python main.py
+```
+
+## Completed Features
+
+- ✅ **Basic Hello World Agents**: Simple implementations in C# and Python with 1000-iteration performance testing
+- ✅ **Azure OpenAI Integration**: Cloud-based AI service integration
+- ✅ **Ollama Integration**: Local model support for privacy and offline use
+- ✅ **Comprehensive Performance Metrics**: Built-in time and memory tracking with statistical analysis
+- ✅ **Model Warmup**: Automatic warmup calls to ensure consistent performance measurements
+- ✅ **Metrics Export**: Automatic JSON export of performance data for easy comparison
+- ✅ **Cross-platform**: Works on Windows, Linux, and macOS
+- ✅ **Configuration via Environment Variables**: Easy setup with `.env` files
+- ✅ **1000-Iteration Testing**: Statistically significant performance measurements
+- ✅ **LLM-Ready Comparison**: AI-friendly format for automated performance analysis
+- ✅ **Comprehensive Benchmarking Scenarios**: Multiple prompt types (simple, reasoning, conceptual, long output)
+- ✅ **Batch Processing Tests**: Configurable batch processing with throughput metrics
+- ✅ **CPU Utilization Monitoring**: Cross-platform CPU usage tracking
+- ✅ **Automated Comparison Reports**: Enhanced JSON with summary generation
+- ✅ **Streaming Response Tests**: Time-to-first-token measurement
+- ✅ **Concurrent Request Handling**: Async concurrent execution using Task.WhenAll and asyncio.gather
 
 ## Contributing
 
@@ -355,6 +525,7 @@ Contributions are welcome! Areas of interest:
 - Additional AI service providers
 - Improved metrics collection
 - Optimization suggestions
+- Cross-language performance analysis
 
 ## License
 
