@@ -35,7 +35,7 @@ try
 
         Console.WriteLine("✓ Agent framework initialized successfully");
         Console.WriteLine("✓ Ollama service configured");
-        
+
         // Warmup call - prepares the model for subsequent calls
         Console.WriteLine("⏳ Performing warmup call to prepare the model...");
         try
@@ -52,7 +52,7 @@ try
             Console.WriteLine($"⚠ Warmup call failed: {warmupEx.Message}");
             Console.WriteLine("Continuing with performance test...");
         }
-        
+
         Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
 
         // Run iterations with actual Ollama calls
@@ -157,7 +157,7 @@ try
     Console.WriteLine($"Max Iteration Time: {maxIterationTime:F3} ms");
     Console.WriteLine($"Memory Used: {memoryUsed:F2} MB");
     Console.WriteLine("========================\n");
-    
+
     // Export metrics to JSON file
     var currentTimestamp = DateTimeOffset.UtcNow;
     var metricsData = new
