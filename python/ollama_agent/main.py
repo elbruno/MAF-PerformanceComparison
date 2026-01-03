@@ -19,7 +19,7 @@ based on the reference implementation from microsoft/agent-framework.
 
 Ensure to install Ollama and have a model running locally before running the sample.
 Not all Models support function calling, to test function calling try llama3.2 or qwen2.5:8b
-Set the model to use via the OLLAMA_CHAT_MODEL_ID environment variable.
+Set the model to use via the OLLAMA_MODEL_ID environment variable.
 
 Reference: https://github.com/microsoft/agent-framework/blob/main/python/samples/getting_started/agents/ollama/ollama_agent_basic.py
 https://ollama.com/
@@ -35,9 +35,9 @@ async def run_performance_test() -> None:
     print("=== Python Microsoft Agent Framework - Ollama Agent ===\n")
     
     # Configuration - Read from environment variables or use defaults
-    # Note: OllamaChatClient uses OLLAMA_HOST and OLLAMA_CHAT_MODEL_ID environment variables
+    # Note: OllamaChatClient uses OLLAMA_HOST and OLLAMA_MODEL_ID environment variables
     endpoint = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-    model_name = os.getenv("OLLAMA_CHAT_MODEL_ID", "ministral-3")
+    model_name = os.getenv("OLLAMA_MODEL_ID", "llama3.2")
     
     print(f"Configuring for Ollama endpoint: {endpoint}")
     print(f"Using model: {model_name}")
@@ -57,7 +57,7 @@ async def run_performance_test() -> None:
     
     try:
         # Create agent using agent-framework with Ollama
-        # Note: The model is configured via OLLAMA_CHAT_MODEL_ID environment variable
+        # Note: The model is configured via OLLAMA_MODEL_ID environment variable
         agent = OllamaChatClient().create_agent(
             name="PerformanceTestAgent",
             instructions="You are a helpful assistant. Provide brief, concise responses.",
