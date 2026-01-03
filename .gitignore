@@ -419,3 +419,6 @@ FodyWeavers.xsd
 
 # Performance metrics output files
 metrics_*.json
+
+# Test results folders (keep sample folder)
+tests_results/[0-9]*
