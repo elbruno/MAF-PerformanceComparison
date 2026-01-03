@@ -9,12 +9,49 @@ I have two performance test results from running the Microsoft Agent Framework i
 
 **First Test Result:**
 ```json
-[PASTE CONTENT OF FIRST METRICS FILE HERE]
+{
+  "TestInfo": {
+    "Language": "CSharp",
+    "Framework": "DotNet",
+    "Provider": "Ollama",
+    "Model": "ministral-3",
+    "Endpoint": "http://localhost:11434",
+    "Timestamp": "2026-01-03T16:44:48.6552059\u002B00:00",
+    "WarmupSuccessful": true
+  },
+  "Metrics": {
+    "TotalIterations": 1000,
+    "TotalExecutionTimeMs": 193340,
+    "AverageTimePerIterationMs": 192.69156220000008,
+    "MinIterationTimeMs": 122.2108,
+    "MaxIterationTimeMs": 957.1436,
+    "MemoryUsedMB": 16.231216430664062
+  }
+}
 ```
 
 **Second Test Result:**
+
 ```json
-[PASTE CONTENT OF SECOND METRICS FILE HERE]
+{
+  "TestInfo": {
+    "Language": "Python",
+    "Framework": "Python",
+    "Provider": "Ollama",
+    "Model": "ministral-3",
+    "Endpoint": "http://localhost:11434",
+    "Timestamp": "2026-01-03T16:48:44.735982+00:00",
+    "WarmupSuccessful": true
+  },
+  "Metrics": {
+    "TotalIterations": 1000,
+    "TotalExecutionTimeMs": 204568.12357902527,
+    "AverageTimePerIterationMs": 203.7170925140381,
+    "MinIterationTimeMs": 133.34345817565918,
+    "MaxIterationTimeMs": 516.1840915679932,
+    "MemoryUsedMB": 1.9609375
+  }
+}
 ```
 
 Please provide a comprehensive comparison that includes:
@@ -46,6 +83,7 @@ Please provide a comprehensive comparison that includes:
    - Consider both speed and resource efficiency
 
 Please format your response in a clear, structured way with percentages and concrete numbers for easy understanding.
+
 ```
 
 ## Usage Instructions
