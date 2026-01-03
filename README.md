@@ -85,9 +85,9 @@ python main.py
 2. Fill in your Azure OpenAI credentials:
    ```
    AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
    ```
+3. Authenticate with Azure CLI: `az login`
 
 **C# Version:**
 ```bash
@@ -159,8 +159,9 @@ Set these environment variables or create a `.env` file:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | `https://your-resource.openai.azure.com/` |
-| `AZURE_OPENAI_API_KEY` | API key for authentication | `your-api-key-here` |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployed model name | `gpt-4` |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployed model name | `gpt-4o-mini` |
+
+**Note:** Authentication is handled via Azure CLI. Run `az login` before using Azure OpenAI agents.
 
 ### Ollama Configuration
 
@@ -169,7 +170,7 @@ Set these environment variables or create a `.env` file (optional - defaults pro
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OLLAMA_ENDPOINT` | Ollama service endpoint | `http://localhost:11434` |
-| `OLLAMA_MODEL_ID` | Model to use | `llama2` |
+| `OLLAMA_MODEL_NAME` | Model to use | `llama2` |
 
 ## Features
 
@@ -217,7 +218,10 @@ Both C# and Python implementations use:
 - **Solution**: Create a `.env` file with your Azure OpenAI credentials
 
 **Problem**: Connection errors or authentication failures
-- **Solution**: Verify your endpoint URL and API key are correct
+- **Solution**: 
+  - Verify your endpoint URL is correct
+  - Run `az login` to authenticate with Azure CLI
+  - Ensure your Azure account has access to the Azure OpenAI resource
 
 ### Ollama Agents
 

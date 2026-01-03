@@ -1,19 +1,41 @@
+import asyncio
 import os
 import time
-import asyncio
 import psutil
+from random import randint
+from typing import Annotated
+
+from agent_framework.azure import AzureAIClient
+from azure.identity.aio import AzureCliCredential
+from pydantic import Field
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-async def main():
+"""
+Azure AI Agent Performance Test
+
+This sample demonstrates basic usage of AzureAIClient with performance testing.
+Shows both streaming and non-streaming responses with 1000 iteration testing.
+"""
+
+
+def get_weather(
+    location: Annotated[str, Field(description="The location to get the weather for.")],
+) -> str:
+    """Get the weather for a given location."""
+    conditions = ["sunny", "cloudy", "rainy", "stormy"]
+    return f"The weather in {location} is {conditions[randint(0, 3)]} with a high of {randint(10, 30)}°C."
+
+
+async def run_performance_test() -> None:
+    """Run 1000 iterations of agent operations for performance testing."""
     print("=== Python Microsoft Agent Framework - Azure OpenAI Agent ===\n")
     
     # Configuration - Read from environment variables
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
     
     # Start performance measurement
     start_time = time.time()
@@ -25,12 +47,11 @@ async def main():
     iteration_times = []
     
     try:
-        if not endpoint or not api_key:
-            print("⚠ Configuration not found. Using demo mode.")
+        if not endpoint:
+            print("⚠ AZURE_OPENAI_ENDPOINT not found. Using demo mode.")
             print("To use Azure OpenAI, set the following environment variables:")
             print("  - AZURE_OPENAI_ENDPOINT")
-            print("  - AZURE_OPENAI_API_KEY")
-            print("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-4')")
+            print("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-4o-mini')")
             print(f"\n✓ Agent framework structure ready (demo mode)")
             print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
             
@@ -47,38 +68,40 @@ async def main():
                 if (i + 1) % 100 == 0:
                     print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
         else:
-            # For actual Azure OpenAI integration, use:
-            # from agent_framework import ChatAgent
-            # from azure.ai.inference import ChatCompletionsClient
-            # from azure.core.credentials import AzureKeyCredential
-            # 
-            # client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(api_key))
-            # agent = ChatAgent(chat_client=client, instructions="You are a helpful assistant.")
-            
-            print("✓ Agent framework initialized successfully")
-            print("✓ Azure OpenAI service configured")
-            print(f"✓ Using deployment: {deployment_name}")
-            print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
-            
-            # For now, run in demo mode since we're focusing on the structure
-            # In production, you would make actual API calls here
-            for i in range(ITERATIONS):
-                iteration_start = time.time()
+            # For authentication, run `az login` command in terminal
+            async with (
+                AzureCliCredential() as credential,
+                AzureAIClient(credential=credential).create_agent(
+                    name="PerformanceTestAgent",
+                    instructions="You are a helpful assistant. Provide brief, concise responses.",
+                    tools=get_weather,
+                ) as agent,
+            ):
+                print("✓ Agent framework initialized successfully")
+                print("✓ Azure AI service configured")
+                print(f"✓ Using deployment: {deployment_name}")
+                print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
                 
-                # Simulate agent operation
-                response = f"Response {i + 1}"
+                # Run 1000 iterations with actual API calls
+                for i in range(ITERATIONS):
+                    iteration_start = time.time()
+                    
+                    # Invoke the agent
+                    result = await agent.run(f"Say hello {i + 1}")
+                    
+                    iteration_end = time.time()
+                    iteration_times.append((iteration_end - iteration_start) * 1000)
+                    
+                    if (i + 1) % 100 == 0:
+                        print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
                 
-                iteration_end = time.time()
-                iteration_times.append((iteration_end - iteration_start) * 1000)
-                
-                if (i + 1) % 100 == 0:
-                    print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
-        
-        print("\n--- Sample Agent Response ---")
-        print("Hello from the Microsoft Agent Framework with Azure OpenAI!")
-        print("This agent is ready to process requests.")
-        print("Performance test completed successfully.")
-        print("---------------------------\n")
+                # Show a sample streaming response
+                print("\n--- Sample Agent Streaming Response ---")
+                print("Agent: ", end="", flush=True)
+                async for chunk in agent.run_stream("What's the weather like in Seattle?"):
+                    if chunk.text:
+                        print(chunk.text, end="", flush=True)
+                print("\n---------------------------\n")
         
         # Calculate statistics
         avg_iteration_time = sum(iteration_times) / len(iteration_times)
@@ -107,5 +130,6 @@ async def main():
     print(f"Memory Used: {memory_used:.2f} MB")
     print("========================\n")
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_performance_test())
