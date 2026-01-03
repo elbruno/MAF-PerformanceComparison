@@ -3,12 +3,16 @@ import time
 import asyncio
 import psutil
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents import ChatHistory
 
 # Load environment variables
 load_dotenv()
+
+# Default chat settings
+DEFAULT_CHAT_SETTINGS = {}
 
 async def main():
     print("=== Python Microsoft Agent Framework - Ollama Agent ===\n")
@@ -33,9 +37,6 @@ async def main():
         kernel = Kernel()
         
         # Ollama provides an OpenAI-compatible API
-        # For Semantic Kernel, we use the OpenAI connector with custom URL
-        from openai import AsyncOpenAI
-        
         # Create a custom OpenAI client for Ollama
         client = AsyncOpenAI(
             api_key="not-used",  # Ollama doesn't require an API key
@@ -59,7 +60,7 @@ async def main():
             print("\n--- Attempting to connect to Ollama ---")
             response = await chat_service.get_chat_message_content(
                 chat_history=chat_history,
-                settings={}
+                settings=DEFAULT_CHAT_SETTINGS
             )
             
             print("\n--- Agent Response ---")

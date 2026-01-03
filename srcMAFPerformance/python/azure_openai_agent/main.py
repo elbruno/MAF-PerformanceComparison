@@ -10,6 +10,9 @@ from semantic_kernel.contents import ChatHistory
 # Load environment variables
 load_dotenv()
 
+# Default chat settings
+DEFAULT_CHAT_SETTINGS = {}
+
 async def main():
     print("=== Python Microsoft Agent Framework - Azure OpenAI Agent ===\n")
     
@@ -54,7 +57,7 @@ async def main():
             
             response = await chat_service.get_chat_message_content(
                 chat_history=chat_history,
-                settings={}
+                settings=DEFAULT_CHAT_SETTINGS
             )
             
             print("\n--- Agent Response ---")

@@ -20,6 +20,12 @@ try
     Console.WriteLine("Install Ollama from: https://ollama.ai/");
     Console.WriteLine($"Start Ollama and pull the model: ollama pull {modelId}\n");
     
+    // Validate endpoint URL
+    if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var endpointUri))
+    {
+        throw new ArgumentException($"Invalid endpoint URL: {endpoint}");
+    }
+    
     // Create a kernel with OpenAI-compatible chat completion service for Ollama
     var builder = Kernel.CreateBuilder();
     
@@ -27,7 +33,7 @@ try
     builder.AddOpenAIChatCompletion(
         modelId: modelId,
         apiKey: null, // Ollama doesn't require an API key
-        endpoint: new Uri(endpoint));
+        endpoint: endpointUri);
     
     var kernel = builder.Build();
     
