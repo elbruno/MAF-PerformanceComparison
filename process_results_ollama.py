@@ -379,11 +379,11 @@ def analyze_prompts(
     return analysis_file
 
 
-def ensure_results_folder(test_mode: str) -> str:
+def ensure_results_folder(test_mode: str, iterations: int = 1000) -> str:
     """Create the destination folder inside tests_results."""
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder_name = f"{timestamp}_{test_mode}"
+    folder_name = f"{timestamp}_{test_mode}_{iterations}iter"
     tests_results_dir = "tests_results"
 
     os.makedirs(tests_results_dir, exist_ok=True)
@@ -405,6 +405,21 @@ def determine_test_mode(metrics_files: List[str]) -> str:
     metrics_data = load_metrics_file(most_recent_file)
     test_info = metrics_data.get("TestInfo", {}) if metrics_data else {}
     return test_info.get("TestMode", info.get("test_mode", DEFAULT_TEST_MODE))
+
+
+def determine_iterations(metrics: List[Dict[str, Any]]) -> int:
+    """Extract iterations count from metrics, preferring the most common value."""
+
+    if not metrics:
+        return 1000
+
+    # Get iterations from first metric that has it
+    for entry in metrics:
+        iterations = entry.get("Metrics", {}).get("TotalIterations")
+        if iterations:
+            return int(iterations)
+
+    return 1000
 
 
 def move_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
@@ -485,9 +500,10 @@ def main() -> int:
         print(f"Reusing existing organized folder: {destination_folder}")
         moved_files = [m.get("_filepath") for m in ollama_metrics if m.get("_filepath")]
     else:
-        # Determine destination folder based on most recent file's test mode
+        # Determine destination folder based on most recent file's test mode and iterations
         test_mode = determine_test_mode([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
-        destination_folder = ensure_results_folder(test_mode)
+        iterations = determine_iterations(ollama_metrics)
+        destination_folder = ensure_results_folder(test_mode, iterations)
         print(f"Created folder: {destination_folder}")
         print()
 
