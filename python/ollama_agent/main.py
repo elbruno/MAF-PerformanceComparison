@@ -1,13 +1,9 @@
 import asyncio
 import json
 import os
-import sys
 import time
 import psutil
 from datetime import datetime, timezone
-
-# Ensure shared python/ directory is on path to locate local agent_framework shim
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
@@ -18,11 +14,14 @@ load_dotenv()
 """
 Ollama Agent Performance Test
 
-This sample demonstrates implementing an Ollama agent with performance testing.
+This sample demonstrates implementing an Ollama agent with performance testing,
+based on the reference implementation from microsoft/agent-framework.
 
 Ensure to install Ollama and have a model running locally before running the sample.
-Not all Models support function calling, to test function calling try llama3.2 or qwen3:4b
-Set the model to use via the OLLAMA_MODEL_NAME environment variable or modify the code below.
+Not all Models support function calling, to test function calling try llama3.2 or qwen2.5:8b
+Set the model to use via the OLLAMA_CHAT_MODEL_ID environment variable.
+
+Reference: https://github.com/microsoft/agent-framework/blob/main/python/samples/getting_started/agents/ollama/ollama_agent_basic.py
 https://ollama.com/
 """
 
@@ -36,13 +35,14 @@ async def run_performance_test() -> None:
     print("=== Python Microsoft Agent Framework - Ollama Agent ===\n")
     
     # Configuration - Read from environment variables or use defaults
-    endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
-    model_name = os.getenv("OLLAMA_MODEL_NAME", "ministral-3")
+    # Note: OllamaChatClient uses OLLAMA_HOST and OLLAMA_CHAT_MODEL_ID environment variables
+    endpoint = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    model_name = os.getenv("OLLAMA_CHAT_MODEL_ID", "ministral-3")
     
     print(f"Configuring for Ollama endpoint: {endpoint}")
     print(f"Using model: {model_name}")
     print("\nNote: This requires Ollama to be running locally.")
-    print("Install Ollama from: https://ollama.ai/")
+    print("Install Ollama from: https://ollama.com/")
     print(f"Start Ollama and pull the model: ollama pull {model_name}\n")
     
     # Start performance measurement
@@ -57,7 +57,8 @@ async def run_performance_test() -> None:
     
     try:
         # Create agent using agent-framework with Ollama
-        agent = OllamaChatClient(model_id=model_name).create_agent(
+        # Note: The model is configured via OLLAMA_CHAT_MODEL_ID environment variable
+        agent = OllamaChatClient().create_agent(
             name="PerformanceTestAgent",
             instructions="You are a helpful assistant. Provide brief, concise responses.",
             tools=get_time,
