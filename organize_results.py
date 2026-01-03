@@ -6,14 +6,18 @@ This script:
 1. Creates a new timestamped folder in tests_results/
 2. Moves all metrics_*.json files to the new folder
 3. Generates a comparison markdown file ready for LLM analysis
+4. Optionally analyzes the comparison using Ollama or Azure OpenAI
 """
 
 import os
 import json
 import shutil
 import glob
+import subprocess
+import sys
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
 
 
 # Constants
@@ -258,6 +262,182 @@ def create_comparison_markdown(metrics_files: List[str], output_dir: str) -> str
     return output_file
 
 
+def detect_llm_provider() -> Optional[str]:
+    """Detect which LLM provider to use based on environment variables."""
+    load_dotenv()
+    
+    # Check for Azure OpenAI configuration
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    
+    if azure_endpoint and azure_deployment:
+        return "azure"
+    
+    # Check if Ollama is available
+    ollama_endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
+    try:
+        import requests
+        response = requests.get(f"{ollama_endpoint}/api/tags", timeout=2)
+        if response.status_code == 200:
+            return "ollama"
+    except:
+        pass
+    
+    return None
+
+
+def analyze_with_ollama(prompt: str, endpoint: str = "http://localhost:11434", 
+                        model: str = "llama2") -> Optional[str]:
+    """Analyze the comparison using Ollama."""
+    try:
+        import requests
+        
+        print(f"Analyzing results with Ollama ({model})...")
+        
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False
+        }
+        
+        response = requests.post(
+            f"{endpoint}/api/generate",
+            json=payload,
+            timeout=120
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get("response", "")
+        else:
+            print(f"Error: Ollama returned status {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"Error calling Ollama: {e}")
+        return None
+
+
+def analyze_with_azure_openai(prompt: str) -> Optional[str]:
+    """Analyze the comparison using Azure OpenAI."""
+    try:
+        from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+        from openai import AzureOpenAI
+        
+        load_dotenv()
+        
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+        
+        if not endpoint or not deployment:
+            print("Error: Azure OpenAI configuration not found")
+            return None
+        
+        print(f"Analyzing results with Azure OpenAI ({deployment})...")
+        
+        # Use Azure credential for authentication
+        token_provider = get_bearer_token_provider(
+            DefaultAzureCredential(),
+            "https://cognitiveservices.azure.com/.default"
+        )
+        
+        client = AzureOpenAI(
+            azure_endpoint=endpoint,
+            azure_ad_token_provider=token_provider,
+            api_version="2024-02-15-preview"
+        )
+        
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[
+                {"role": "system", "content": "You are a performance analysis expert. Analyze the test results and provide detailed insights."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=4000,
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        print(f"Error calling Azure OpenAI: {e}")
+        return None
+
+
+def extract_comparison_prompt(markdown_file: str) -> Optional[str]:
+    """Extract the LLM comparison prompt from the markdown file."""
+    try:
+        with open(markdown_file, 'r') as f:
+            content = f.read()
+        
+        # Find the comparison prompt section
+        start_marker = "#### LLM Comparison Prompt"
+        end_marker = "---"
+        
+        start_idx = content.find(start_marker)
+        if start_idx == -1:
+            return None
+        
+        # Skip the marker and code block start
+        start_idx = content.find("```", start_idx) + 3
+        
+        # Find the end of the prompt (before the closing code block)
+        end_idx = content.find("```", start_idx)
+        
+        if end_idx == -1:
+            return None
+        
+        prompt = content[start_idx:end_idx].strip()
+        return prompt
+        
+    except Exception as e:
+        print(f"Error extracting prompt: {e}")
+        return None
+
+
+def analyze_comparison_results(markdown_file: str, output_dir: str) -> Optional[str]:
+    """Analyze the comparison results using available LLM provider."""
+    
+    # Detect which provider to use
+    provider = detect_llm_provider()
+    
+    if not provider:
+        print("No LLM provider available (Ollama or Azure OpenAI)")
+        print("Skipping automated analysis.")
+        return None
+    
+    # Extract the comparison prompt
+    prompt = extract_comparison_prompt(markdown_file)
+    if not prompt:
+        print("Could not extract comparison prompt from markdown")
+        return None
+    
+    # Analyze based on provider
+    analysis = None
+    if provider == "ollama":
+        load_dotenv()
+        endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
+        model = os.getenv("OLLAMA_MODEL_NAME", "llama2")
+        analysis = analyze_with_ollama(prompt, endpoint, model)
+    elif provider == "azure":
+        analysis = analyze_with_azure_openai(prompt)
+    
+    if not analysis:
+        return None
+    
+    # Save the analysis to a file
+    analysis_file = os.path.join(output_dir, "analysis_report.md")
+    
+    with open(analysis_file, 'w') as f:
+        f.write("# Performance Analysis Report\n\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"Analysis Provider: {provider.upper()}\n\n")
+        f.write("---\n\n")
+        f.write(analysis)
+    
+    return analysis_file
+
+
 def main():
     """Main function to organize test results."""
     print("=" * 60)
@@ -330,6 +510,15 @@ def main():
             print(f"  ✓ Created: {os.path.basename(markdown_file)}")
         print()
     
+    # Analyze comparison results with LLM
+    analysis_file = None
+    if markdown_file:
+        print("Analyzing comparison results...")
+        analysis_file = analyze_comparison_results(markdown_file, new_folder)
+        if analysis_file:
+            print(f"  ✓ Created: {os.path.basename(analysis_file)}")
+        print()
+    
     # Summary
     print("=" * 60)
     print("Results organized successfully!")
@@ -339,11 +528,17 @@ def main():
     print(f"Files moved: {len(moved_files)}")
     if markdown_file:
         print(f"Comparison report: {markdown_file}")
+    if analysis_file:
+        print(f"Analysis report: {analysis_file}")
     print()
     print("Next steps:")
-    print("1. Review the comparison_report.md file")
-    print("2. Copy the LLM prompts to your preferred AI assistant")
-    print("3. Analyze the performance differences")
+    if analysis_file:
+        print("1. Review the analysis_report.md file for automated insights")
+        print("2. Review the comparison_report.md file for detailed metrics")
+    else:
+        print("1. Review the comparison_report.md file")
+        print("2. Copy the LLM prompts to your preferred AI assistant")
+        print("3. Analyze the performance differences")
     
     return 0
 

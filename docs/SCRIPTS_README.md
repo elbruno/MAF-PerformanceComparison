@@ -131,10 +131,53 @@ After running tests, use the `organize_results.py` script to:
 1. Create a timestamped folder in `tests_results/`
 2. Move all metrics JSON files to the new folder
 3. Generate a comparison markdown file ready for LLM analysis
+4. **Automatically analyze the results using Ollama or Azure OpenAI** (if configured)
 
 ```bash
 python3 organize_results.py
 ```
+
+### Requirements
+
+Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### LLM Analysis Feature
+
+The script automatically detects and uses available LLM providers to analyze test results:
+
+**Ollama (Local)**
+- The script checks if Ollama is running on `http://localhost:11434` (or `OLLAMA_ENDPOINT` if set)
+- Uses the model specified in `OLLAMA_MODEL_NAME` environment variable (default: `llama2`)
+- No authentication required
+
+**Azure OpenAI (Cloud)**
+- Requires `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT_NAME` environment variables
+- Uses Azure CLI authentication (`az login` must be run first)
+- Recommended for production use
+
+**Configuration**
+
+Set environment variables in a `.env` file or shell:
+
+```bash
+# For Ollama
+export OLLAMA_ENDPOINT=http://localhost:11434
+export OLLAMA_MODEL_NAME=llama2
+
+# For Azure OpenAI
+export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+export AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
+```
+
+**Output Files**
+
+The script will generate:
+- `comparison_report.md` - Detailed metrics comparison with LLM-ready prompts
+- `analysis_report.md` - **Automated analysis from the LLM** (if provider is available)
 
 The script will:
 - Find all `metrics_*.json` files in the current directory and subdirectories

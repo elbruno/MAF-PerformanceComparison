@@ -268,7 +268,7 @@ The project includes a comprehensive comparison prompt template that enables eas
    - `metrics_dotnet_ollama_[timestamp].json`
    - `metrics_python_ollama_[timestamp].json`
 
-3. **Use the comparison prompt** from `comparison_prompt_template.md`:
+3. **Use the comparison prompt** from `docs/comparison_prompt_template.md`:
    - Open the template file
    - Copy the prompt
    - Paste the content of your two metrics JSON files into the prompt
@@ -280,7 +280,7 @@ The project includes a comprehensive comparison prompt template that enables eas
    - Statistical insights
    - Recommendations
 
-See [comparison_prompt_template.md](comparison_prompt_template.md) for detailed instructions and the full prompt template.
+See [docs/comparison_prompt_template.md](docs/comparison_prompt_template.md) for detailed instructions and the full prompt template.
 
 ### Manual Comparison
 
@@ -541,8 +541,11 @@ After running tests, use `organize_results.py` to:
 - Create timestamped folders in `tests_results/`
 - Move all metrics files to organized folders
 - Generate comparison markdown with LLM-ready prompts
+- **Automatically analyze results using Ollama or Azure OpenAI** (if configured)
 
-See [SCRIPTS_README.md](SCRIPTS_README.md) for detailed documentation.
+The script detects available LLM providers and generates an automated analysis report alongside the comparison report.
+
+See [docs/SCRIPTS_README.md](docs/SCRIPTS_README.md) for detailed documentation.
 
 ## Completed Features
 
@@ -564,6 +567,7 @@ See [SCRIPTS_README.md](SCRIPTS_README.md) for detailed documentation.
 - ✅ **Concurrent Request Handling**: Async concurrent execution using Task.WhenAll and asyncio.gather
 - ✅ **Test Automation Scripts**: Bash, PowerShell, and Batch scripts to run tests in different modes
 - ✅ **Results Organization Tool**: Python script to organize test results and generate comparison reports
+- ✅ **Automated LLM Analysis**: Automatic performance analysis using Ollama or Azure OpenAI
 
 ## Contributing
 
