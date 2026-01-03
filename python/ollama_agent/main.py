@@ -52,7 +52,7 @@ async def run_performance_test() -> None:
     
     try:
         # Create agent using agent-framework with Ollama
-        agent = OllamaChatClient().create_agent(
+        agent = OllamaChatClient(model_id=model_name).create_agent(
             name="PerformanceTestAgent",
             instructions="You are a helpful assistant. Provide brief, concise responses.",
             tools=get_time,
