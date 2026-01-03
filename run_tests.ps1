@@ -4,7 +4,7 @@
 param(
     [string]$TestMode = "standard",
     [int]$Iterations = 1000,
-    [string]$AgentType = "HelloWorld",
+    [string]$AgentType = "Ollama",
     [int]$BatchSize = 10,
     [int]$ConcurrentRequests = 5
 )
@@ -92,9 +92,11 @@ function Run-PythonTest {
         # Run Python test (use python3 if available, fallback to python)
         if (Get-Command python3 -ErrorAction SilentlyContinue) {
             python3 main.py
-        } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+        }
+        elseif (Get-Command py -ErrorAction SilentlyContinue) {
             py main.py
-        } else {
+        }
+        else {
             python main.py
         }
         
@@ -176,9 +178,11 @@ Write-Host ""
 Write-ColorOutput "Next steps:" "Cyan"
 if (Get-Command python3 -ErrorAction SilentlyContinue) {
     Write-Host "1. Run: python3 organize_results.py"
-} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+}
+elseif (Get-Command py -ErrorAction SilentlyContinue) {
     Write-Host "1. Run: py organize_results.py"
-} else {
+}
+else {
     Write-Host "1. Run: python organize_results.py"
 }
 Write-Host "2. Check the tests_results\ folder for organized results"
