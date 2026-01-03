@@ -28,7 +28,6 @@ benchmark_scenarios = {
 start_time = time.time()
 process = psutil.Process(os.getpid())
 start_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
-start_cpu_times = process.cpu_times()
 
 iteration_times = []
 cpu_samples = []
