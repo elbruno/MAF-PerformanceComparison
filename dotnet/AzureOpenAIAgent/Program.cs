@@ -137,7 +137,7 @@ try
             Provider = "AzureOpenAI",
             Model = deploymentName,
             Endpoint = endpoint ?? "N/A (Demo Mode)",
-            Timestamp = DateTime.UtcNow.ToString("o"),
+            Timestamp = DateTimeOffset.UtcNow.ToString("o"),
             WarmupSuccessful = warmupSuccessful
         },
         Metrics = new
@@ -153,7 +153,7 @@ try
 
     var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
     var jsonContent = JsonSerializer.Serialize(metricsData, jsonOptions);
-    var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+    var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
     var outputFileName = $"metrics_dotnet_azureopenai_{timestamp}.json";
     await File.WriteAllTextAsync(outputFileName, jsonContent);
     Console.WriteLine($"✓ Metrics exported to: {outputFileName}\n");
