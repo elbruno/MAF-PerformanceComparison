@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
@@ -17,6 +18,7 @@ var startMemory = GC.GetTotalMemory(true);
 // Performance test: Run agent operations 1000 times
 const int ITERATIONS = 1000;
 var iterationTimes = new List<double>();
+var warmupSuccessful = false;
 
 try
 {
@@ -59,6 +61,24 @@ try
         Console.WriteLine("✓ Agent framework initialized successfully");
         Console.WriteLine("✓ Azure OpenAI service configured");
         Console.WriteLine($"✓ Using deployment: {deploymentName}");
+        
+        // Warmup call - prepares the model for subsequent calls
+        Console.WriteLine("⏳ Performing warmup call to prepare the model...");
+        try
+        {
+            var warmupStart = Stopwatch.GetTimestamp();
+            var warmupResponse = await agent.RunAsync("Hello, this is a warmup call.");
+            var warmupEnd = Stopwatch.GetTimestamp();
+            var warmupTimeMs = (warmupEnd - warmupStart) * 1000.0 / Stopwatch.Frequency;
+            Console.WriteLine($"✓ Warmup completed in {warmupTimeMs:F3} ms");
+            warmupSuccessful = true;
+        }
+        catch (Exception warmupEx)
+        {
+            Console.WriteLine($"⚠ Warmup call failed: {warmupEx.Message}");
+            Console.WriteLine("Continuing with performance test...");
+        }
+        
         Console.WriteLine($"✓ Running {ITERATIONS} iterations for performance testing\n");
 
         // Run 1000 iterations with actual API calls
@@ -106,6 +126,37 @@ try
     Console.WriteLine($"Max Iteration Time: {maxIterationTime:F3} ms");
     Console.WriteLine($"Memory Used: {memoryUsed:F2} MB");
     Console.WriteLine("========================\n");
+    
+    // Export metrics to JSON file
+    var metricsData = new
+    {
+        TestInfo = new
+        {
+            Language = "CSharp",
+            Framework = "DotNet",
+            Provider = "AzureOpenAI",
+            Model = deploymentName,
+            Endpoint = endpoint ?? "N/A (Demo Mode)",
+            Timestamp = DateTime.UtcNow.ToString("o"),
+            WarmupSuccessful = warmupSuccessful
+        },
+        Metrics = new
+        {
+            TotalIterations = ITERATIONS,
+            TotalExecutionTimeMs = stopwatch.ElapsedMilliseconds,
+            AverageTimePerIterationMs = avgIterationTime,
+            MinIterationTimeMs = minIterationTime,
+            MaxIterationTimeMs = maxIterationTime,
+            MemoryUsedMB = memoryUsed
+        }
+    };
+
+    var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+    var jsonContent = JsonSerializer.Serialize(metricsData, jsonOptions);
+    var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+    var outputFileName = $"metrics_dotnet_azureopenai_{timestamp}.json";
+    await File.WriteAllTextAsync(outputFileName, jsonContent);
+    Console.WriteLine($"✓ Metrics exported to: {outputFileName}\n");
 }
 catch (Exception ex)
 {

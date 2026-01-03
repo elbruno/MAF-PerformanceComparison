@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import time
 import psutil
@@ -49,6 +50,7 @@ async def run_performance_test() -> None:
     # Performance test: Run agent operations 1000 times
     ITERATIONS = 1000
     iteration_times = []
+    warmup_successful = False
     
     try:
         # Create agent using agent-framework with Ollama
@@ -60,6 +62,20 @@ async def run_performance_test() -> None:
         
         print("✓ Agent framework initialized successfully")
         print("✓ Ollama service configured")
+        
+        # Warmup call - prepares the model for subsequent calls
+        print("⏳ Performing warmup call to prepare the model...")
+        try:
+            warmup_start = time.time()
+            await agent.run("Hello, this is a warmup call.")
+            warmup_end = time.time()
+            warmup_time_ms = (warmup_end - warmup_start) * 1000
+            print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms")
+            warmup_successful = True
+        except Exception as warmup_ex:
+            print(f"⚠ Warmup call failed: {warmup_ex}")
+            print("Continuing with performance test...")
+        
         print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
         
         try:
@@ -129,6 +145,33 @@ async def run_performance_test() -> None:
     print(f"Max Iteration Time: {max_iteration_time:.3f} ms")
     print(f"Memory Used: {memory_used:.2f} MB")
     print("========================\n")
+    
+    # Export metrics to JSON file
+    metrics_data = {
+        "TestInfo": {
+            "Language": "Python",
+            "Framework": "Python",
+            "Provider": "Ollama",
+            "Model": model_name,
+            "Endpoint": endpoint,
+            "Timestamp": datetime.utcnow().isoformat() + "Z",
+            "WarmupSuccessful": warmup_successful
+        },
+        "Metrics": {
+            "TotalIterations": ITERATIONS,
+            "TotalExecutionTimeMs": total_execution_time,
+            "AverageTimePerIterationMs": avg_iteration_time,
+            "MinIterationTimeMs": min_iteration_time,
+            "MaxIterationTimeMs": max_iteration_time,
+            "MemoryUsedMB": memory_used
+        }
+    }
+    
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    output_filename = f"metrics_python_ollama_{timestamp}.json"
+    with open(output_filename, 'w') as f:
+        json.dump(metrics_data, f, indent=2)
+    print(f"✓ Metrics exported to: {output_filename}\n")
 
 
 if __name__ == "__main__":

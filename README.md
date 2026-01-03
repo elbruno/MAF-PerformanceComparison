@@ -143,7 +143,15 @@ python main.py
 
 ## Performance Metrics
 
-Each application automatically runs **1000 iterations** of agent operations to measure performance accurately. The following metrics are collected and reported:
+Each application automatically runs **1000 iterations** of agent operations to measure performance accurately. 
+
+### Warmup Phase
+
+Before the performance test begins, each agent performs a **warmup call** to ensure the model is loaded and ready. This helps provide more consistent and accurate performance measurements by eliminating first-call overhead.
+
+### Collected Metrics
+
+The following metrics are collected and reported:
 
 - **Total Iterations**: Number of agent operations performed (1000)
 - **Total Execution Time**: Time from initialization to completion (milliseconds)
@@ -151,10 +159,15 @@ Each application automatically runs **1000 iterations** of agent operations to m
 - **Min Iteration Time**: Fastest iteration time (milliseconds)
 - **Max Iteration Time**: Slowest iteration time (milliseconds)
 - **Memory Usage**: RAM consumed during execution (MB)
+- **Warmup Status**: Whether the warmup call was successful
 
 Example output:
 
 ```
+⏳ Performing warmup call to prepare the model...
+✓ Warmup completed in 1234.567 ms
+✓ Running 1000 iterations for performance testing
+
 === Performance Metrics ===
 Total Iterations: 1000
 Total Execution Time: 1245 ms
@@ -163,6 +176,42 @@ Min Iteration Time: 0.985 ms
 Max Iteration Time: 2.156 ms
 Memory Used: 3.45 MB
 ========================
+✓ Metrics exported to: metrics_dotnet_ollama_20260103_123456.json
+```
+
+### Metrics Export
+
+After each test run, performance metrics are automatically exported to a JSON file for easy comparison and analysis. The files are named using the pattern:
+
+- .NET Ollama: `metrics_dotnet_ollama_[timestamp].json`
+- Python Ollama: `metrics_python_ollama_[timestamp].json`
+- .NET Azure OpenAI: `metrics_dotnet_azureopenai_[timestamp].json`
+- Python Azure OpenAI: `metrics_python_azureopenai_[timestamp].json`
+
+The JSON format is structured to be easily understood by LLMs for automated comparison and analysis.
+
+Example metrics file structure:
+
+```json
+{
+  "TestInfo": {
+    "Language": "CSharp",
+    "Framework": "DotNet",
+    "Provider": "Ollama",
+    "Model": "ministral-3",
+    "Endpoint": "http://localhost:11434",
+    "Timestamp": "2026-01-03T12:34:56.789Z",
+    "WarmupSuccessful": true
+  },
+  "Metrics": {
+    "TotalIterations": 1000,
+    "TotalExecutionTimeMs": 1245,
+    "AverageTimePerIterationMs": 1.234,
+    "MinIterationTimeMs": 0.985,
+    "MaxIterationTimeMs": 2.156,
+    "MemoryUsedMB": 3.45
+  }
+}
 ```
 
 ## Configuration
@@ -193,27 +242,64 @@ Set these environment variables or create a `.env` file (optional - defaults pro
 - ✅ **Azure OpenAI Integration**: Cloud-based AI service integration
 - ✅ **Ollama Integration**: Local model support for privacy and offline use
 - ✅ **Comprehensive Performance Metrics**: Built-in time and memory tracking with statistical analysis
+- ✅ **Model Warmup**: Automatic warmup calls to ensure consistent performance measurements
+- ✅ **Metrics Export**: Automatic JSON export of performance data for easy comparison
 - ✅ **Cross-platform**: Works on Windows, Linux, and macOS
 - ✅ **Configuration via Environment Variables**: Easy setup with `.env` files
 - ✅ **1000-Iteration Testing**: Statistically significant performance measurements
+- ✅ **LLM-Ready Comparison**: AI-friendly format for automated performance analysis
 
 ## Comparing Performance
 
-To compare performance between implementations:
+### Automated Comparison with LLMs
+
+The project includes a comprehensive comparison prompt template that enables easy performance analysis using Large Language Models.
+
+**Quick Start:**
+
+1. **Run performance tests** for the implementations you want to compare:
+   ```bash
+   # Example: Compare .NET vs Python for Ollama
+   cd dotnet/OllamaAgent && dotnet run
+   cd ../../python/ollama_agent && python main.py
+   ```
+
+2. **Locate the generated metrics files** (automatically created after each run):
+   - `metrics_dotnet_ollama_[timestamp].json`
+   - `metrics_python_ollama_[timestamp].json`
+
+3. **Use the comparison prompt** from `comparison_prompt_template.md`:
+   - Open the template file
+   - Copy the prompt
+   - Paste the content of your two metrics JSON files into the prompt
+   - Submit to your preferred LLM (ChatGPT, Claude, Copilot, etc.)
+
+4. **Get comprehensive analysis** including:
+   - Performance comparison (speed, consistency, efficiency)
+   - Resource usage analysis
+   - Statistical insights
+   - Recommendations
+
+See [comparison_prompt_template.md](comparison_prompt_template.md) for detailed instructions and the full prompt template.
+
+### Manual Comparison
+
+To manually compare performance between implementations:
 
 1. **Run the same scenario** in both C# and Python
-2. **Compare the metrics** shown at the end of each run, focusing on:
+2. **Compare the exported JSON files** or terminal output, focusing on:
    - Total execution time for 1000 iterations
    - Average time per iteration
    - Memory usage patterns
+   - Performance consistency (min/max range)
 3. **Consider factors** like:
-   - Cold start vs. warm start
+   - Warmup success (first call overhead)
    - Model complexity
    - Network latency (for Azure OpenAI)
    - Hardware specifications
    - Language runtime differences (JIT compilation, GC behavior, etc.)
 
-The 1000-iteration approach provides statistically significant results by averaging out transient performance fluctuations.
+The 1000-iteration approach with warmup provides statistically significant results by averaging out transient performance fluctuations.
 
 ## Architecture
 
