@@ -78,15 +78,15 @@ ITERATIONS=1000 TEST_MODE=scenarios ./run_tests.sh
 After running tests, organize the results:
 
 ```bash
-python organize_results.py
+python process_results_ollama.py
 ```
 
 This will:
 
 - Create timestamped folders in `tests_results/`
 - Move all metrics files to organized folders
-- Generate comparison reports
-- Automatically analyze results using available LLMs
+- Generate comparison reports using the provided prompt template
+- Automatically analyze results with an Ollama agent (using the test model)
 
 ## What Gets Measured
 

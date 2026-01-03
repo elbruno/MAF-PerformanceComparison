@@ -84,13 +84,13 @@ echo.
 echo Next steps:
 where python3 >nul 2>&1
 if %ERRORLEVEL%==0 (
-    echo 1. Run: python3 organize_results.py
+    echo 1. Run: python3 process_results_ollama.py
 ) else (
     where py >nul 2>&1
     if %ERRORLEVEL%==0 (
-        echo 1. Run: py organize_results.py
+        echo 1. Run: py process_results_ollama.py
     ) else (
-        echo 1. Run: python organize_results.py
+        echo 1. Run: python process_results_ollama.py
     )
 )
 echo 2. Check the tests_results\ folder for organized results

@@ -7,16 +7,19 @@ This directory contains scripts to automate performance testing and result organ
 ### 1. Test Execution Scripts
 
 #### Bash Script (Linux/Mac)
+
 ```bash
 ./run_tests.sh
 ```
 
 #### PowerShell Script (Windows)
+
 ```powershell
 .\run_tests.ps1
 ```
 
 #### Batch Script (Windows)
+
 ```batch
 run_tests.bat
 ```
@@ -24,7 +27,7 @@ run_tests.bat
 ### 2. Results Organization Script
 
 ```bash
-python3 organize_results.py
+python3 process_results_ollama.py
 ```
 
 ## Usage Examples
@@ -66,6 +69,7 @@ TEST_MODE=scenarios ./run_tests.sh
 ```
 
 PowerShell examples:
+
 ```powershell
 # Batch mode
 .\run_tests.ps1 -TestMode batch -BatchSize 20
@@ -93,6 +97,7 @@ AGENT_TYPE=All ./run_tests.sh
 ```
 
 PowerShell example:
+
 ```powershell
 .\run_tests.ps1 -AgentType All
 ```
@@ -108,6 +113,7 @@ ITERATIONS=2000 ./run_tests.sh
 ```
 
 PowerShell example:
+
 ```powershell
 .\run_tests.ps1 -Iterations 2000
 ```
@@ -121,20 +127,22 @@ TEST_MODE=batch BATCH_SIZE=15 ITERATIONS=100 AGENT_TYPE=All ./run_tests.sh
 ```
 
 PowerShell:
+
 ```powershell
 .\run_tests.ps1 -TestMode batch -BatchSize 15 -Iterations 100 -AgentType All
 ```
 
 ## Organizing Test Results
 
-After running tests, use the `organize_results.py` script to:
+After running tests, use the `process_results_ollama.py` script to:
+
 1. Create a timestamped folder in `tests_results/`
 2. Move all metrics JSON files to the new folder
 3. Generate a comparison markdown file ready for LLM analysis
-4. **Automatically analyze the results using Ollama or Azure OpenAI** (if configured)
+4. **Automatically analyze the results using an Ollama agent** (using your test model)
 
 ```bash
-python3 organize_results.py
+python3 process_results_ollama.py
 ```
 
 ### Requirements
@@ -147,17 +155,11 @@ pip install -r requirements.txt
 
 ### LLM Analysis Feature
 
-The script automatically detects and uses available LLM providers to analyze test results:
+The script analyzes test results using Ollama:
 
-**Ollama (Local)**
-- The script checks if Ollama is running on `http://localhost:11434` (or `OLLAMA_ENDPOINT` if set)
-- Uses the model specified in `OLLAMA_MODEL_NAME` environment variable (default: `llama2`)
+- Checks if Ollama is running on `http://localhost:11434` (or `OLLAMA_ENDPOINT` if set)
+- Uses the model specified in `OLLAMA_MODEL_NAME` (defaults to the model found in the metrics; fallback `ministral-3`)
 - No authentication required
-
-**Azure OpenAI (Cloud)**
-- Requires `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT_NAME` environment variables
-- Uses Azure CLI authentication (`az login` must be run first)
-- Recommended for production use
 
 **Configuration**
 
@@ -166,20 +168,18 @@ Set environment variables in a `.env` file or shell:
 ```bash
 # For Ollama
 export OLLAMA_ENDPOINT=http://localhost:11434
-export OLLAMA_MODEL_NAME=llama2
-
-# For Azure OpenAI
-export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-export AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
+export OLLAMA_MODEL_NAME=ministral-3
 ```
 
 **Output Files**
 
 The script will generate:
+
 - `comparison_report.md` - Detailed metrics comparison with LLM-ready prompts
-- `analysis_report.md` - **Automated analysis from the LLM** (if provider is available)
+- `analysis_report.md` - **Automated analysis from Ollama** (if the service is reachable)
 
 The script will:
+
 - Find all `metrics_*.json` files in the current directory and subdirectories
 - Create a folder named `YYYYMMDD_HHMMSS_{test_mode}` in `tests_results/`
 - Move all metrics files to the new folder
@@ -194,7 +194,7 @@ Complete workflow for running tests and analyzing results:
 TEST_MODE=standard ITERATIONS=1000 AGENT_TYPE=HelloWorld ./run_tests.sh
 
 # 2. Organize results
-python3 organize_results.py
+python3 process_results_ollama.py
 
 # 3. Review the comparison report
 cat tests_results/[generated_folder]/comparison_report.md
@@ -234,6 +234,7 @@ cat tests_results/[generated_folder]/comparison_report.md
 ### For Agent Configuration
 
 See individual agent directories for specific configuration requirements:
+
 - Azure OpenAI: Requires `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT_NAME`
 - Ollama: Optional `OLLAMA_ENDPOINT` and `OLLAMA_MODEL_NAME`
 
@@ -274,7 +275,7 @@ dotnet build
 If you get permission errors on Linux/Mac:
 
 ```bash
-chmod +x run_tests.sh organize_results.py
+chmod +x run_tests.sh process_results_ollama.py
 ```
 
 ## Output Files
@@ -284,23 +285,27 @@ chmod +x run_tests.sh organize_results.py
 Format: `metrics_{language}_{provider}_{testmode}_{timestamp}.json`
 
 Examples:
+
 - `metrics_dotnet_helloworld_standard_20260103_123456.json`
 - `metrics_python_ollama_batch_20260103_123456.json`
 
 ### Organized Results
 
-After running `organize_results.py`:
+After running `process_results_ollama.py`:
+
 ```
 tests_results/
 └── 20260103_123456_standard/
     ├── metrics_dotnet_helloworld_standard_20260103_123456.json
     ├── metrics_python_helloworld_standard_20260103_123456.json
-    └── comparison_report.md
+    ├── comparison_report.md
+    └── analysis_report.md
 ```
 
 ## Next Steps
 
 After organizing results:
+
 1. Open `comparison_report.md` in the generated folder
 2. Copy the LLM comparison prompts
 3. Paste into your preferred AI assistant (ChatGPT, Claude, Copilot, etc.)

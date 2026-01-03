@@ -1,11 +1,7 @@
-# Requirements for organize_results.py
+# Requirements for process_results_ollama.py
 
 # For loading environment variables
 python-dotenv>=1.0.0
 
 # For making HTTP requests (Ollama)
 requests>=2.31.0
-
-# For Azure OpenAI integration
-azure-identity>=1.15.0
-openai>=1.12.0

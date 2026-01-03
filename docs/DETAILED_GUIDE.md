@@ -519,7 +519,7 @@ To simplify running tests and organizing results, this project includes automate
 run_tests.bat
 
 # Organize results after testing
-python3 organize_results.py
+python3 process_results_ollama.py
 ```
 
 ### Advanced Usage
@@ -542,14 +542,15 @@ The scripts automatically:
 - Support all test modes (standard, batch, concurrent, streaming, scenarios)
 - Handle agent-specific configuration
 
-After running tests, use `organize_results.py` to:
+After running tests, use `process_results_ollama.py` to:
 
 - Create timestamped folders in `tests_results/`
 - Move all metrics files to organized folders
 - Generate comparison markdown with LLM-ready prompts
-- **Automatically analyze results using Ollama or Azure OpenAI** (if configured)
 
-The script detects available LLM providers and generates an automated analysis report alongside the comparison report.
+The script automatically analyzes results using an Ollama agent with the same model used in your tests.
+
+It generates an automated analysis report alongside the comparison report.
 
 See [docs/SCRIPTS_README.md](docs/SCRIPTS_README.md) for detailed documentation.
 
