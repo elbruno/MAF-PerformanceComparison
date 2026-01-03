@@ -1,3 +1,4 @@
-agent-framework-core[all]==1.0.0b251223
+# Optional: agent-framework-core[all] (not published to PyPI as of 2026-01-03)
+# agent-framework-core[all]==1.0.0b251223
 psutil>=6.1.1
 python-dotenv>=1.0.1

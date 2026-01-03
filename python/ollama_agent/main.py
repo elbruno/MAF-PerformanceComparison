@@ -5,7 +5,14 @@ import time
 import psutil
 from datetime import datetime, timezone
 
-from agent_framework.ollama import OllamaChatClient
+_IMPORT_ERROR = None
+try:
+    from agent_framework.ollama import OllamaChatClient
+    _AGENT_FRAMEWORK_AVAILABLE = True
+except ImportError as import_err:
+    OllamaChatClient = None
+    _AGENT_FRAMEWORK_AVAILABLE = False
+    _IMPORT_ERROR = import_err
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -26,6 +33,20 @@ https://ollama.com/
 def get_time(location: str) -> str:
     """Get the current time."""
     return f"The current time in {location} is {datetime.now().strftime('%I:%M %p')}."
+
+
+class _DemoOllamaAgent:
+    """Lightweight stand-in used when agent_framework isn't installed."""
+
+    async def run(self, prompt: str) -> str:
+        await asyncio.sleep(0.001)
+        return f"Demo response: {prompt}"
+
+    async def run_stream(self, prompt: str):
+        tokens = ["Demo response chunk 1 ", "chunk 2 ", "chunk 3"]
+        for token in tokens:
+            await asyncio.sleep(0.001)
+            yield type("Chunk", (), {"text": token})()
 
 
 async def run_performance_test() -> None:
@@ -53,16 +74,31 @@ async def run_performance_test() -> None:
     warmup_successful = False
     
     try:
-        # Create agent using agent-framework with Ollama
-        agent = OllamaChatClient(model_id=model_name).create_agent(
-            name="PerformanceTestAgent",
-            instructions="You are a helpful assistant. Provide brief, concise responses.",
-            tools=get_time,
-        )
-        
-        print("✓ Agent framework initialized successfully")
-        print("✓ Ollama service configured")
-        
+        demo_mode = False
+        if not _AGENT_FRAMEWORK_AVAILABLE:
+            demo_mode = True
+            print("⚠ agent_framework package not installed. Running in demo mode.")
+            if _IMPORT_ERROR:
+                print(f"  Import error: {_IMPORT_ERROR}")
+            agent = _DemoOllamaAgent()
+            print("✓ Demo agent initialized")
+        else:
+            try:
+                # Create agent using agent-framework with Ollama
+                agent = OllamaChatClient(model_id=model_name).create_agent(
+                    name="PerformanceTestAgent",
+                    instructions="You are a helpful assistant. Provide brief, concise responses.",
+                    tools=get_time,
+                )
+                print("✓ Agent framework initialized successfully")
+                print("✓ Ollama service configured")
+            except Exception as init_ex:
+                demo_mode = True
+                print(f"⚠ Could not initialize Ollama client: {init_ex}")
+                print("  Falling back to demo mode.")
+                agent = _DemoOllamaAgent()
+                print("✓ Demo agent initialized")
+
         # Warmup call - prepares the model for subsequent calls
         print("⏳ Performing warmup call to prepare the model...")
         try:
@@ -79,13 +115,10 @@ async def run_performance_test() -> None:
         print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
         
         try:
-            # Run 1000 iterations with actual Ollama calls
+            # Run iterations with the active agent (real or demo)
             for i in range(ITERATIONS):
                 iteration_start = time.time()
-                
-                # Invoke the agent
-                result = await agent.run(f"Say hello {i + 1}")
-                
+                await agent.run(f"Say hello {i + 1}")
                 iteration_end = time.time()
                 iteration_times.append((iteration_end - iteration_start) * 1000)
                 
@@ -96,26 +129,20 @@ async def run_performance_test() -> None:
             print("\n--- Sample Agent Streaming Response ---")
             print("Agent: ", end="", flush=True)
             async for chunk in agent.run_stream("What time is it in Seattle?"):
-                if chunk.text:
+                if getattr(chunk, "text", None):
                     print(chunk.text, end="", flush=True)
             print("\n---------------------------\n")
             
         except Exception as connect_ex:
-            print(f"\n⚠ Could not connect to Ollama at {endpoint}")
-            print("Please ensure Ollama is running and the model is available.")
-            print(f"Error: {connect_ex}")
-            print("\nRunning in demo mode instead...\n")
-            
-            # Run in demo mode if Ollama is not available
+            print(f"\n⚠ Agent execution failed: {connect_ex}")
+            print("Switching to demo mode to complete the run...")
+            demo_mode = True
+            agent = _DemoOllamaAgent()
             for i in range(ITERATIONS):
                 iteration_start = time.time()
-                
-                # Simulate agent operation
-                response = f"Response {i + 1} (Demo mode)"
-                
+                await agent.run(f"Say hello {i + 1} (demo fallback)")
                 iteration_end = time.time()
                 iteration_times.append((iteration_end - iteration_start) * 1000)
-                
                 if (i + 1) % 100 == 0:
                     print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
         
