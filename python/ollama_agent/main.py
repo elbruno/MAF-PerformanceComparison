@@ -5,7 +5,7 @@ import time
 import psutil
 from datetime import datetime, timezone
 
-from agent_framework.ollama import OllamaChatClient
+from agent_framework_ollama import OllamaChatClient
 from dotenv import load_dotenv
 
 # Load environment variables
