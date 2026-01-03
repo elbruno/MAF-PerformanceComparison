@@ -7,14 +7,7 @@ from random import randint
 from typing import Annotated
 from datetime import datetime, timezone
 
-_IMPORT_ERROR = None
-try:
-    from agent_framework.azure import AzureAIClient
-    _AGENT_FRAMEWORK_AVAILABLE = True
-except ImportError as import_err:
-    AzureAIClient = None
-    _AGENT_FRAMEWORK_AVAILABLE = False
-    _IMPORT_ERROR = import_err
+from agent_framework.azure import AzureAIClient
 from azure.identity.aio import AzureCliCredential
 from pydantic import Field
 from dotenv import load_dotenv
@@ -37,21 +30,6 @@ def get_weather(
     conditions = ["sunny", "cloudy", "rainy", "stormy"]
     return f"The weather in {location} is {conditions[randint(0, 3)]} with a high of {randint(10, 30)}°C."
 
-
-class _DemoAzureAgent:
-    """Fallback agent used when agent_framework isn't available."""
-
-    async def run(self, prompt: str) -> str:
-        await asyncio.sleep(0.001)
-        return f"Demo response: {prompt}"
-
-    async def run_stream(self, prompt: str):
-        tokens = ["Demo stream chunk 1 ", "chunk 2 ", "chunk 3"]
-        for token in tokens:
-            await asyncio.sleep(0.001)
-            yield type("Chunk", (), {"text": token})()
-
-
 async def run_performance_test() -> None:
     """Run 1000 iterations of agent operations for performance testing."""
     print("=== Python Microsoft Agent Framework - Azure OpenAI Agent ===\n")
@@ -71,99 +49,53 @@ async def run_performance_test() -> None:
     warmup_successful = False
     
     try:
-        demo_mode = False
-        agent = None
-
-        if not _AGENT_FRAMEWORK_AVAILABLE:
-            demo_mode = True
-            print("⚠ agent_framework package not installed. Running in demo mode.")
-            if _IMPORT_ERROR:
-                print(f"  Import error: {_IMPORT_ERROR}")
-            agent = _DemoAzureAgent()
-
         if not endpoint:
-            demo_mode = True
-            if agent is None:
-                agent = _DemoAzureAgent()
-            print("⚠ AZURE_OPENAI_ENDPOINT not found. Using demo mode.")
-            print("To use Azure OpenAI, set the following environment variables:")
-            print("  - AZURE_OPENAI_ENDPOINT")
-            print("  - AZURE_OPENAI_DEPLOYMENT_NAME (optional, defaults to 'gpt-5-mini')")
+            raise RuntimeError("AZURE_OPENAI_ENDPOINT not set. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT_NAME.")
 
-        if demo_mode:
-            print(f"\n✓ Agent framework structure ready (demo mode)")
+        # For authentication, run `az login` command in terminal
+        async with (
+            AzureCliCredential() as credential,
+            AzureAIClient(credential=credential).create_agent(
+                name="PerformanceTestAgent",
+                instructions="You are a helpful assistant. Provide brief, concise responses.",
+                tools=get_weather,
+            ) as agent,
+        ):
+            print("✓ Agent framework initialized successfully")
+            print("✓ Azure AI service configured")
+            print(f"✓ Using deployment: {deployment_name}")
+            
+            # Warmup call - prepares the model for subsequent calls
+            print("⏳ Performing warmup call to prepare the model...")
+            warmup_start = time.time()
+            await agent.run("Hello, this is a warmup call.")
+            warmup_end = time.time()
+            warmup_time_ms = (warmup_end - warmup_start) * 1000
+            print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms")
+            warmup_successful = True
+            
             print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
-
-            # Warmup in demo mode
-            try:
-                warmup_start = time.time()
-                await agent.run("Hello, this is a warmup call.")
-                warmup_end = time.time()
-                warmup_time_ms = (warmup_end - warmup_start) * 1000
-                print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms (demo)")
-                warmup_successful = True
-            except Exception as warmup_ex:
-                print(f"⚠ Warmup call failed in demo mode: {warmup_ex}")
-
-            # Run iterations in demo mode
+            
+            # Run 1000 iterations with actual API calls
             for i in range(ITERATIONS):
                 iteration_start = time.time()
-                await agent.run(f"Hello from iteration {i + 1}! (Demo mode)")
+                
+                # Invoke the agent
+                await agent.run(f"Say hello {i + 1}")
+                
                 iteration_end = time.time()
                 iteration_times.append((iteration_end - iteration_start) * 1000)
                 
                 if (i + 1) % 100 == 0:
                     print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
-
-        else:
-            # For authentication, run `az login` command in terminal
-            async with (
-                AzureCliCredential() as credential,
-                AzureAIClient(credential=credential).create_agent(
-                    name="PerformanceTestAgent",
-                    instructions="You are a helpful assistant. Provide brief, concise responses.",
-                    tools=get_weather,
-                ) as agent,
-            ):
-                print("✓ Agent framework initialized successfully")
-                print("✓ Azure AI service configured")
-                print(f"✓ Using deployment: {deployment_name}")
-                
-                # Warmup call - prepares the model for subsequent calls
-                print("⏳ Performing warmup call to prepare the model...")
-                try:
-                    warmup_start = time.time()
-                    await agent.run("Hello, this is a warmup call.")
-                    warmup_end = time.time()
-                    warmup_time_ms = (warmup_end - warmup_start) * 1000
-                    print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms")
-                    warmup_successful = True
-                except Exception as warmup_ex:
-                    print(f"⚠ Warmup call failed: {warmup_ex}")
-                    print("Continuing with performance test...")
-                
-                print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
-                
-                # Run 1000 iterations with actual API calls
-                for i in range(ITERATIONS):
-                    iteration_start = time.time()
-                    
-                    # Invoke the agent
-                    await agent.run(f"Say hello {i + 1}")
-                    
-                    iteration_end = time.time()
-                    iteration_times.append((iteration_end - iteration_start) * 1000)
-                    
-                    if (i + 1) % 100 == 0:
-                        print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
-                
-                # Show a sample streaming response
-                print("\n--- Sample Agent Streaming Response ---")
-                print("Agent: ", end="", flush=True)
-                async for chunk in agent.run_stream("What's the weather like in Seattle?"):
-                    if getattr(chunk, "text", None):
-                        print(chunk.text, end="", flush=True)
-                print("\n---------------------------\n")
+            
+            # Show a sample streaming response
+            print("\n--- Sample Agent Streaming Response ---")
+            print("Agent: ", end="", flush=True)
+            async for chunk in agent.run_stream("What's the weather like in Seattle?"):
+                if getattr(chunk, "text", None):
+                    print(chunk.text, end="", flush=True)
+            print("\n---------------------------\n")
         
         # Calculate statistics
         avg_iteration_time = sum(iteration_times) / len(iteration_times)
@@ -175,7 +107,7 @@ async def run_performance_test() -> None:
         print(f"Type: {type(ex).__name__}")
         import traceback
         traceback.print_exc()
-        return
+        raise
     
     # Stop performance measurement
     end_time = time.time()

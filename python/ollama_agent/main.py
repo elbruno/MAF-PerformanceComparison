@@ -5,14 +5,7 @@ import time
 import psutil
 from datetime import datetime, timezone
 
-_IMPORT_ERROR = None
-try:
-    from agent_framework.ollama import OllamaChatClient
-    _AGENT_FRAMEWORK_AVAILABLE = True
-except ImportError as import_err:
-    OllamaChatClient = None
-    _AGENT_FRAMEWORK_AVAILABLE = False
-    _IMPORT_ERROR = import_err
+from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -33,21 +26,6 @@ https://ollama.com/
 def get_time(location: str) -> str:
     """Get the current time."""
     return f"The current time in {location} is {datetime.now().strftime('%I:%M %p')}."
-
-
-class _DemoOllamaAgent:
-    """Lightweight stand-in used when agent_framework isn't installed."""
-
-    async def run(self, prompt: str) -> str:
-        await asyncio.sleep(0.001)
-        return f"Demo response: {prompt}"
-
-    async def run_stream(self, prompt: str):
-        tokens = ["Demo response chunk 1 ", "chunk 2 ", "chunk 3"]
-        for token in tokens:
-            await asyncio.sleep(0.001)
-            yield type("Chunk", (), {"text": token})()
-
 
 async def run_performance_test() -> None:
     """Run 1000 iterations of agent operations for performance testing."""
@@ -74,77 +52,43 @@ async def run_performance_test() -> None:
     warmup_successful = False
     
     try:
-        demo_mode = False
-        if not _AGENT_FRAMEWORK_AVAILABLE:
-            demo_mode = True
-            print("⚠ agent_framework package not installed. Running in demo mode.")
-            if _IMPORT_ERROR:
-                print(f"  Import error: {_IMPORT_ERROR}")
-            agent = _DemoOllamaAgent()
-            print("✓ Demo agent initialized")
-        else:
-            try:
-                # Create agent using agent-framework with Ollama
-                agent = OllamaChatClient(model_id=model_name).create_agent(
-                    name="PerformanceTestAgent",
-                    instructions="You are a helpful assistant. Provide brief, concise responses.",
-                    tools=get_time,
-                )
-                print("✓ Agent framework initialized successfully")
-                print("✓ Ollama service configured")
-            except Exception as init_ex:
-                demo_mode = True
-                print(f"⚠ Could not initialize Ollama client: {init_ex}")
-                print("  Falling back to demo mode.")
-                agent = _DemoOllamaAgent()
-                print("✓ Demo agent initialized")
+        # Create agent using agent-framework with Ollama
+        agent = OllamaChatClient(model_id=model_name).create_agent(
+            name="PerformanceTestAgent",
+            instructions="You are a helpful assistant. Provide brief, concise responses.",
+            tools=get_time,
+        )
+        print("✓ Agent framework initialized successfully")
+        print("✓ Ollama service configured")
 
         # Warmup call - prepares the model for subsequent calls
         print("⏳ Performing warmup call to prepare the model...")
-        try:
-            warmup_start = time.time()
-            await agent.run("Hello, this is a warmup call.")
-            warmup_end = time.time()
-            warmup_time_ms = (warmup_end - warmup_start) * 1000
-            print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms")
-            warmup_successful = True
-        except Exception as warmup_ex:
-            print(f"⚠ Warmup call failed: {warmup_ex}")
-            print("Continuing with performance test...")
+        warmup_start = time.time()
+        await agent.run("Hello, this is a warmup call.")
+        warmup_end = time.time()
+        warmup_time_ms = (warmup_end - warmup_start) * 1000
+        print(f"✓ Warmup completed in {warmup_time_ms:.3f} ms")
+        warmup_successful = True
         
         print(f"✓ Running {ITERATIONS} iterations for performance testing\n")
         
-        try:
-            # Run iterations with the active agent (real or demo)
-            for i in range(ITERATIONS):
-                iteration_start = time.time()
-                await agent.run(f"Say hello {i + 1}")
-                iteration_end = time.time()
-                iteration_times.append((iteration_end - iteration_start) * 1000)
-                
-                if (i + 1) % 100 == 0:
-                    print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
+        # Run iterations
+        for i in range(ITERATIONS):
+            iteration_start = time.time()
+            await agent.run(f"Say hello {i + 1}")
+            iteration_end = time.time()
+            iteration_times.append((iteration_end - iteration_start) * 1000)
             
-            # Show a sample streaming response
-            print("\n--- Sample Agent Streaming Response ---")
-            print("Agent: ", end="", flush=True)
-            async for chunk in agent.run_stream("What time is it in Seattle?"):
-                if getattr(chunk, "text", None):
-                    print(chunk.text, end="", flush=True)
-            print("\n---------------------------\n")
-            
-        except Exception as connect_ex:
-            print(f"\n⚠ Agent execution failed: {connect_ex}")
-            print("Switching to demo mode to complete the run...")
-            demo_mode = True
-            agent = _DemoOllamaAgent()
-            for i in range(ITERATIONS):
-                iteration_start = time.time()
-                await agent.run(f"Say hello {i + 1} (demo fallback)")
-                iteration_end = time.time()
-                iteration_times.append((iteration_end - iteration_start) * 1000)
-                if (i + 1) % 100 == 0:
-                    print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
+            if (i + 1) % 100 == 0:
+                print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
+        
+        # Show a sample streaming response
+        print("\n--- Sample Agent Streaming Response ---")
+        print("Agent: ", end="", flush=True)
+        async for chunk in agent.run_stream("What time is it in Seattle?"):
+            if getattr(chunk, "text", None):
+                print(chunk.text, end="", flush=True)
+        print("\n---------------------------\n")
         
         # Calculate statistics
         avg_iteration_time = sum(iteration_times) / len(iteration_times)
@@ -156,7 +100,7 @@ async def run_performance_test() -> None:
         print(f"Type: {type(ex).__name__}")
         import traceback
         traceback.print_exc()
-        return
+        raise
     
     # Stop performance measurement
     end_time = time.time()
