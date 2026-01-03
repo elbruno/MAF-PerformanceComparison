@@ -19,6 +19,20 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
+# Optional imports with graceful fallback
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
+try:
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+    from openai import AzureOpenAI
+    AZURE_AVAILABLE = True
+except ImportError:
+    AZURE_AVAILABLE = False
+
 
 # Constants
 DEFAULT_TEST_MODE = "standard"
@@ -270,17 +284,19 @@ def detect_llm_provider() -> Optional[str]:
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
     
-    if azure_endpoint and azure_deployment:
+    if azure_endpoint and azure_deployment and AZURE_AVAILABLE:
         return "azure"
     
     # Check if Ollama is available
+    if not REQUESTS_AVAILABLE:
+        return None
+    
     ollama_endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
     try:
-        import requests
         response = requests.get(f"{ollama_endpoint}/api/tags", timeout=2)
         if response.status_code == 200:
             return "ollama"
-    except:
+    except Exception:
         pass
     
     return None
@@ -289,9 +305,11 @@ def detect_llm_provider() -> Optional[str]:
 def analyze_with_ollama(prompt: str, endpoint: str = "http://localhost:11434", 
                         model: str = "llama2") -> Optional[str]:
     """Analyze the comparison using Ollama."""
+    if not REQUESTS_AVAILABLE:
+        print("Error: requests module not available")
+        return None
+    
     try:
-        import requests
-        
         print(f"Analyzing results with Ollama ({model})...")
         
         payload = {
@@ -320,10 +338,11 @@ def analyze_with_ollama(prompt: str, endpoint: str = "http://localhost:11434",
 
 def analyze_with_azure_openai(prompt: str) -> Optional[str]:
     """Analyze the comparison using Azure OpenAI."""
+    if not AZURE_AVAILABLE:
+        print("Error: Azure OpenAI modules not available")
+        return None
+    
     try:
-        from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-        from openai import AzureOpenAI
-        
         load_dotenv()
         
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
