@@ -51,7 +51,7 @@ The `OllamaChatClient()` constructor no longer requires the `model_id` parameter
 **After:**
 
 - `OLLAMA_HOST` - Ollama server endpoint (used by agent-framework)
-- `OLLAMA_MODEL_ID` - Model to use (used by agent-framework)
+- `OLLAMA_CHAT_MODEL_ID` - Model to use (used by agent-framework)
 
 These environment variable names match the official agent-framework conventions.
 
@@ -77,9 +77,9 @@ Copy `.env.example` to `.env` and configure:
 # OLLAMA_HOST is used by OllamaChatClient (defaults to http://localhost:11434)
 OLLAMA_HOST=http://localhost:11434
 
-# OLLAMA_MODEL_ID is used by OllamaChatClient to specify the model
+# OLLAMA_CHAT_MODEL_ID is used by OllamaChatClient to specify the model
 # For function calling support, try: llama3.2, qwen2.5:8b, mistral
-OLLAMA_MODEL_ID=llama3.2
+OLLAMA_CHAT_MODEL_ID=llama3.2
 
 # Optional: Number of iterations for performance testing (default: 1000)
 # ITERATIONS=1000
