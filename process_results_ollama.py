@@ -41,6 +41,7 @@ def find_metrics_files(search_dir: str = ".") -> List[str]:
         os.path.join(search_dir, "metrics_*.json"),
         os.path.join(search_dir, "dotnet", "**", "metrics_*.json"),
         os.path.join(search_dir, "python", "**", "metrics_*.json"),
+        os.path.join(search_dir, "tests_results", "**", "metrics_*.json"),
     ]
 
     files: List[str] = []
@@ -172,7 +173,7 @@ def build_comparison_prompt(
     second_json = json.dumps(second_metrics, indent=2)
 
     if "{first}" in template_body and "{second}" in template_body:
-        return template_body.format(first=first_json, second=second_json)
+        return template_body.replace("{first}", first_json).replace("{second}", second_json)
 
     # Fall back: compose prompt using the template instructions
     return (
@@ -422,6 +423,23 @@ def move_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
     return moved_files
 
 
+def reuse_existing_folder_if_present(metrics_files: List[str]) -> Optional[str]:
+    """
+    If metrics are already in tests_results/*, reuse that folder to avoid re-moving files.
+
+    Returns the folder path if all metrics reside in the same tests_results subfolder.
+    """
+
+    if not metrics_files:
+        return None
+
+    parent_dirs = {os.path.dirname(path) for path in metrics_files if "tests_results" in os.path.normpath(path).split(os.sep)}
+    if len(parent_dirs) == 1:
+        return parent_dirs.pop()
+
+    return None
+
+
 def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
     """Select an Ollama model: env > first metrics TestInfo.Model > default."""
 
@@ -460,18 +478,25 @@ def main() -> int:
         print("No Ollama metrics found. Ensure provider is Ollama in your tests.")
         return 1
 
-    # Determine destination folder based on most recent file's test mode
-    test_mode = determine_test_mode([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
-    destination_folder = ensure_results_folder(test_mode)
-    print(f"Created folder: {destination_folder}")
-    print()
+    # Determine if metrics are already organized inside tests_results
+    existing_folder = reuse_existing_folder_if_present([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
+    if existing_folder:
+        destination_folder = existing_folder
+        print(f"Reusing existing organized folder: {destination_folder}")
+        moved_files = [m.get("_filepath") for m in ollama_metrics if m.get("_filepath")]
+    else:
+        # Determine destination folder based on most recent file's test mode
+        test_mode = determine_test_mode([m.get("_filepath", "") for m in ollama_metrics if m.get("_filepath")])
+        destination_folder = ensure_results_folder(test_mode)
+        print(f"Created folder: {destination_folder}")
+        print()
 
-    print("Moving metrics files...")
-    moved_files = move_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
-    print()
+        print("Moving metrics files...")
+        moved_files = move_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
+        print()
 
-    # Reload from new location to ensure paths/filenames are accurate
-    reloaded_metrics = [load_metrics_file(path) for path in moved_files]
+    # Reload from current location to ensure paths/filenames are accurate
+    reloaded_metrics = [load_metrics_file(path) for path in moved_files if path]
 
     template_body = load_comparison_template()
     print("Generating comparison report...")
