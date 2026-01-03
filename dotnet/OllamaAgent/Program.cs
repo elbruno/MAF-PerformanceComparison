@@ -142,6 +142,7 @@ try
     Console.WriteLine("========================\n");
     
     // Export metrics to JSON file
+    var currentTimestamp = DateTimeOffset.UtcNow;
     var metricsData = new
     {
         TestInfo = new
@@ -151,7 +152,7 @@ try
             Provider = "Ollama",
             Model = modelName,
             Endpoint = endpoint,
-            Timestamp = DateTimeOffset.UtcNow.ToString("o"),
+            Timestamp = currentTimestamp.ToString("o"),
             WarmupSuccessful = warmupSuccessful
         },
         Metrics = new
@@ -167,7 +168,7 @@ try
 
     var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
     var jsonContent = JsonSerializer.Serialize(metricsData, jsonOptions);
-    var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+    var timestamp = currentTimestamp.ToString("yyyyMMdd_HHmmss");
     var outputFileName = $"metrics_dotnet_ollama_{timestamp}.json";
     await File.WriteAllTextAsync(outputFileName, jsonContent);
     Console.WriteLine($"✓ Metrics exported to: {outputFileName}\n");

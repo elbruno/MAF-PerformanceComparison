@@ -148,6 +148,7 @@ async def run_performance_test() -> None:
     print("========================\n")
     
     # Export metrics to JSON file
+    current_timestamp = datetime.now(timezone.utc)
     metrics_data = {
         "TestInfo": {
             "Language": "Python",
@@ -155,7 +156,7 @@ async def run_performance_test() -> None:
             "Provider": "AzureOpenAI",
             "Model": deployment_name,
             "Endpoint": endpoint or "N/A (Demo Mode)",
-            "Timestamp": datetime.now(timezone.utc).isoformat(),
+            "Timestamp": current_timestamp.isoformat(),
             "WarmupSuccessful": warmup_successful
         },
         "Metrics": {
@@ -168,7 +169,7 @@ async def run_performance_test() -> None:
         }
     }
     
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = current_timestamp.strftime("%Y%m%d_%H%M%S")
     output_filename = f"metrics_python_azureopenai_{timestamp}.json"
     with open(output_filename, 'w') as f:
         json.dump(metrics_data, f, indent=2)
