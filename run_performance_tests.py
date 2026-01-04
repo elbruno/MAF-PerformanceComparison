@@ -41,6 +41,7 @@ except ImportError:
 
 
 DEFAULT_TEST_MODE = "standard"
+DEFAULT_MODEL = "ministral-3"
 COMPARISON_TEMPLATE_PATH = os.path.join("docs", "comparison_prompt_template.md")
 
 # Color codes for cross-platform output
@@ -127,6 +128,7 @@ def run_dotnet_test(
     env["ITERATIONS"] = str(test_config["iterations"])
     env["BATCH_SIZE"] = str(test_config["batch_size"])
     env["CONCURRENT_REQUESTS"] = str(test_config["concurrent_requests"])
+    env["OLLAMA_MODEL_NAME"] = test_config["model"]
 
     try:
         # Build
@@ -182,6 +184,8 @@ def run_python_test(
     env["ITERATIONS"] = str(test_config["iterations"])
     env["BATCH_SIZE"] = str(test_config["batch_size"])
     env["CONCURRENT_REQUESTS"] = str(test_config["concurrent_requests"])
+    env["OLLAMA_MODEL_NAME"] = test_config["model"]
+    env["OLLAMA_CHAT_MODEL_ID"] = test_config["model"]
 
     python_exe = find_python_executable()
     if not python_exe:
@@ -712,7 +716,7 @@ def copy_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
 def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
     """Select an Ollama model: env > first metrics TestInfo.Model > default."""
 
-    model = os.getenv("OLLAMA_MODEL_NAME")
+    model = os.getenv("OLLAMA_MODEL_NAME") or os.getenv("OLLAMA_CHAT_MODEL_ID")
     if model:
         return model
 
@@ -721,7 +725,7 @@ def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
         if model_name:
             return model_name
 
-    return "ministral-3"
+    return DEFAULT_MODEL
 
 
 def process_results(script_dir: str) -> int:
@@ -867,6 +871,11 @@ Examples:
         help="Number of concurrent requests (default: 5)",
     )
     parser.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        help="Ollama model to use for both .NET and Python agents (default: ministral-3)",
+    )
+    parser.add_argument(
         "--process-only",
         action="store_true",
         help="Process results only without running tests",
@@ -904,6 +913,7 @@ Examples:
     print(f"  Agent Type: {args.agent_type}")
     print(f"  Test Mode: {args.test_mode}")
     print(f"  Iterations: {args.iterations}")
+    print(f"  Model: {args.model}")
     if args.test_mode == "batch":
         print(f"  Batch Size: {args.batch_size}")
     if args.test_mode == "concurrent":
@@ -920,6 +930,7 @@ Examples:
         "iterations": args.iterations,
         "batch_size": args.batch_size,
         "concurrent_requests": args.concurrent_requests,
+        "model": args.model,
     }
 
     # Run tests

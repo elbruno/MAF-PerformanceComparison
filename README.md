@@ -48,6 +48,9 @@ python run_performance_tests.py -m batch -b 20
 # Run tests in concurrent mode with 10 parallel requests
 python run_performance_tests.py -m concurrent -c 10
 
+# Use a specific model for both .NET and Python agents (default: ministral-3)
+python run_performance_tests.py --model mistral
+
 # Test different modes
 python run_performance_tests.py -m streaming
 python run_performance_tests.py -m scenarios

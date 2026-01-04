@@ -204,7 +204,7 @@ var agent = new OllamaApiClient(endpoint, model).CreateAIAgent(...);
 **Example (Python):**
 
 ```python
-model = os.getenv("OLLAMA_CHAT_MODEL_ID", "llama3.2")
+model = os.getenv("OLLAMA_CHAT_MODEL_ID", "ministral-3")
 agent = OllamaChatClient(model_id=model).create_agent(...)
 # Warmup, then iterations, then export with MachineInfo
 ```

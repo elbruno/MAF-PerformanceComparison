@@ -88,6 +88,12 @@ Run Ollama agent in concurrent mode with 50 concurrent requests and 200 iteratio
 python run_performance_tests.py -a Ollama -m concurrent -i 200 -c 50
 ```
 
+Run with a specific model for both .NET and Python agents (default: ministral-3):
+
+```bash
+python run_performance_tests.py --model mistral
+```
+
 Test HelloWorld in streaming mode and skip automatic analysis:
 
 ```bash
@@ -168,6 +174,7 @@ Key options:
 - `-i, --iterations`: Number of test iterations (default: 10)
 - `-b, --batch-size`: Batch size for batch mode (default: 10)
 - `-c, --concurrent-requests`: Concurrent requests (default: 5)
+- `--model`: Ollama model to use across agents (default: ministral-3)
 - `--process-only`: Process results without running tests
 - `--skip-cleanup`: Skip cleaning old metrics files
 - `--skip-analysis`: Skip Ollama analysis in results

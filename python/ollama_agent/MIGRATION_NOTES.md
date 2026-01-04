@@ -78,8 +78,8 @@ Copy `.env.example` to `.env` and configure:
 OLLAMA_HOST=http://localhost:11434
 
 # OLLAMA_CHAT_MODEL_ID is used by OllamaChatClient to specify the model
-# For function calling support, try: llama3.2, qwen2.5:8b, mistral
-OLLAMA_CHAT_MODEL_ID=llama3.2
+# For function calling support, try: mistral, qwen2.5:8b
+OLLAMA_CHAT_MODEL_ID=ministral-3
 
 # Optional: Number of iterations for performance testing (default: 1000)
 # ITERATIONS=1000
@@ -95,7 +95,7 @@ python main.py
 
 As per the agent-framework documentation:
 
-- For function calling: `llama3.2`, `qwen2.5:8b`, `mistral`
+- For function calling: `mistral`, `qwen2.5:8b`
 - For reasoning: `qwen3:8b`
 - For multimodal: `gemma3:4b`
 
