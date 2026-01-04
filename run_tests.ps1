@@ -30,6 +30,21 @@ if ($TestMode -eq "concurrent") {
 }
 Write-Host ''
 
+# Clean up old metrics files before running tests
+WriteColor 'Cleaning up old metrics files...' 'Cyan'
+$metricsFiles = Get-ChildItem -Path $scriptDir -Filter 'metrics_*.json' -Recurse -File | Where-Object { $_.FullName -notmatch 'tests_results' }
+if ($metricsFiles.Count -gt 0) {
+    foreach ($file in $metricsFiles) {
+        Remove-Item $file.FullName -Force
+        Write-Host "  Deleted: $($file.Name)"
+    }
+    WriteColor "Cleaned up $($metricsFiles.Count) old metrics file(s)" 'Green'
+}
+else {
+    WriteColor 'No old metrics files found' 'Green'
+}
+Write-Host ''
+
 function RunDotNet {
     param([string]$agentDir, [string]$agentName)
     if (-not (Test-Path $agentDir)) {

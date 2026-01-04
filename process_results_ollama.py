@@ -35,18 +35,19 @@ COMPARISON_TEMPLATE_PATH = os.path.join("docs", "comparison_prompt_template.md")
 
 
 def find_metrics_files(search_dir: str = ".") -> List[str]:
-    """Find all metrics JSON files in the specified directory and subdirectories."""
+    """Find all NEW metrics JSON files (excluding tests_results folder)."""
 
     patterns = [
         os.path.join(search_dir, "metrics_*.json"),
         os.path.join(search_dir, "dotnet", "**", "metrics_*.json"),
         os.path.join(search_dir, "python", "**", "metrics_*.json"),
-        os.path.join(search_dir, "tests_results", "**", "metrics_*.json"),
     ]
 
     files: List[str] = []
     for pattern in patterns:
-        files.extend(glob.glob(pattern, recursive=True))
+        matched_files = glob.glob(pattern, recursive=True)
+        # Exclude files in tests_results folder
+        files.extend([f for f in matched_files if "tests_results" not in f.replace("\\", "/")])
 
     return list(set(files))
 
@@ -427,19 +428,19 @@ def determine_iterations(metrics: List[Dict[str, Any]]) -> int:
 
 
 def copy_metrics_files(metrics_files: List[str], destination: str) -> List[str]:
-    """Copy metrics files into the destination folder and return their new paths."""
+    """Move metrics files into the destination folder and return their new paths."""
 
-    copied_files: List[str] = []
+    moved_files: List[str] = []
     for metrics_file in metrics_files:
         basename = os.path.basename(metrics_file)
         dest_path = os.path.join(destination, basename)
         try:
-            shutil.copy2(metrics_file, dest_path)
-            copied_files.append(dest_path)
-            print(f"  ✓ Copied: {basename}")
+            shutil.move(metrics_file, dest_path)
+            moved_files.append(dest_path)
+            print(f"  ✓ Moved: {basename}")
         except Exception as exc:
-            print(f"  ✗ Failed to copy {basename}: {exc}")
-    return copied_files
+            print(f"  ✗ Failed to move {basename}: {exc}")
+    return moved_files
 
 
 def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
@@ -487,7 +488,7 @@ def main() -> int:
     print(f"Created folder: {destination_folder}")
     print()
 
-    print("Copying metrics files...")
+    print("Moving new metrics files...")
     copied_files = copy_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
     print()
 
@@ -519,7 +520,7 @@ def main() -> int:
     print("=" * 60)
     print()
     print(f"Results location: {destination_folder}")
-    print(f"Files copied: {len(copied_files)}")
+    print(f"Files moved: {len(copied_files)}")
     print(f"Comparison report: {comparison_file}")
     if analysis_file:
         print(f"Analysis report: {analysis_file}")

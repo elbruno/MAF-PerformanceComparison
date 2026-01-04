@@ -85,6 +85,12 @@ run_python_test() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
+# Clean up old metrics files before running tests
+echo -e "${BLUE}Cleaning up old metrics files...${NC}"
+find "${SCRIPT_DIR}/dotnet" "${SCRIPT_DIR}/python" -name 'metrics_*.json' -type f ! -path '*/tests_results/*' -exec rm -f {} \; -exec echo "  Deleted: {}" \; 2>/dev/null || true
+echo -e "${GREEN}Cleanup completed${NC}"
+echo ""
+
 # Run tests based on agent type
 case "${AGENT_TYPE}" in
     "HelloWorld")

@@ -27,6 +27,20 @@ REM Get the script directory
 set SCRIPT_DIR=%~dp0
 cd /d "%SCRIPT_DIR%"
 
+REM Clean up old metrics files before running tests
+echo Cleaning up old metrics files...
+for /r "%SCRIPT_DIR%dotnet" %%f in (metrics_*.json) do (
+    if not "%%~dpf" == "%SCRIPT_DIR%tests_results\" (
+        del "%%f" 2>nul && echo   Deleted: %%~nxf
+    )
+)
+for /r "%SCRIPT_DIR%python" %%f in (metrics_*.json) do (
+    if not "%%~dpf" == "%SCRIPT_DIR%tests_results\" (
+        del "%%f" 2>nul && echo   Deleted: %%~nxf
+    )
+)
+echo.
+
 REM Run tests based on agent type
 if /i "%AGENT_TYPE%"=="HelloWorld" (
     call :run_dotnet_test "%SCRIPT_DIR%dotnet\HelloWorldAgent" "HelloWorld"
