@@ -1,0 +1,280 @@
+@page "/performance"
+@using PerformanceComparison.Web.Models
+@using PerformanceComparison.Web.Services
+@inject PerformanceApiService ApiService
+@rendermode InteractiveServer
+
+<PageTitle>Performance Comparison</PageTitle>
+
+<div class="container-fluid">
+    <h1 class="mb-4">Microsoft Agent Framework - Performance Comparison</h1>
+    <p class="lead">Real-time performance comparison between .NET and Python agent implementations</p>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Test Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Number of Iterations</label>
+                        <input type="number" class="form-control" @bind="config.Iterations" min="1" max="1000" />
+                        <small class="text-muted">Default: 10</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Model</label>
+                        <input type="text" class="form-control" @bind="config.Model" />
+                        <small class="text-muted">e.g., ministral-3, llama2, mistral</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Endpoint</label>
+                        <input type="text" class="form-control" @bind="config.Endpoint" />
+                        <small class="text-muted">Ollama endpoint URL</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Test Mode</label>
+                        <select class="form-select" @bind="config.TestMode">
+                            <option value="standard">Standard</option>
+                            <option value="batch">Batch</option>
+                            <option value="concurrent">Concurrent</option>
+                            <option value="streaming">Streaming</option>
+                            <option value="scenarios">Scenarios</option>
+                        </select>
+                    </div>
+                    @if (config.TestMode == "batch")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Batch Size</label>
+                            <input type="number" class="form-control" @bind="config.BatchSize" min="1" max="100" />
+                        </div>
+                    }
+                    @if (config.TestMode == "concurrent")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Concurrent Requests</label>
+                            <input type="number" class="form-control" @bind="config.ConcurrentRequests" min="1" max="20" />
+                        </div>
+                    }
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" @onclick="RunBothTests" disabled="@isRunning">
+                            @if (isRunning)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Running Tests...</span>
+                            }
+                            else
+                            {
+                                <span>Run Performance Tests</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Service Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span><strong>.NET Backend:</strong></span>
+                        <span class="badge @(dotnetHealthy ? "bg-success" : "bg-danger")">
+                            @(dotnetHealthy ? "Healthy" : "Offline")
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span><strong>Python Backend:</strong></span>
+                        <span class="badge @(pythonHealthy ? "bg-success" : "bg-danger")">
+                            @(pythonHealthy ? "Healthy" : "Offline")
+                        </span>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CheckHealth">
+                        <i class="bi bi-arrow-repeat"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert alert-info mt-3" role="alert">
+                    @statusMessage
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (dotnetResult != null || pythonResult != null)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">.NET Results</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (dotnetResult?.Success == true && dotnetResult.Metrics != null)
+                        {
+                            var m = dotnetResult.Metrics;
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><th>Language</th><td>@m.Language</td></tr>
+                                    <tr><th>Framework</th><td>@m.Framework</td></tr>
+                                    <tr><th>Model</th><td>@m.Model</td></tr>
+                                    <tr><th>Total Iterations</th><td>@m.TotalIterations</td></tr>
+                                    <tr><th>Total Time</th><td>@m.TotalExecutionTimeMs.ToString("N0") ms</td></tr>
+                                    <tr><th>Average Time</th><td>@m.AverageTimePerIterationMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Min Time</th><td>@m.MinIterationTimeMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Max Time</th><td>@m.MaxIterationTimeMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Memory Used</th><td>@m.MemoryUsedMB.ToString("N2") MB</td></tr>
+                                    <tr><th>Warmup</th><td>@(m.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                </tbody>
+                            </table>
+                        }
+                        else if (dotnetResult != null)
+                        {
+                            <div class="alert alert-danger">@dotnetResult.Message</div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No results yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Python Results</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (pythonResult?.Success == true && pythonResult.Metrics != null)
+                        {
+                            var m = pythonResult.Metrics;
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><th>Language</th><td>@m.Language</td></tr>
+                                    <tr><th>Framework</th><td>@m.Framework</td></tr>
+                                    <tr><th>Model</th><td>@m.Model</td></tr>
+                                    <tr><th>Total Iterations</th><td>@m.TotalIterations</td></tr>
+                                    <tr><th>Total Time</th><td>@m.TotalExecutionTimeMs.ToString("N0") ms</td></tr>
+                                    <tr><th>Average Time</th><td>@m.AverageTimePerIterationMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Min Time</th><td>@m.MinIterationTimeMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Max Time</th><td>@m.MaxIterationTimeMs.ToString("N3") ms</td></tr>
+                                    <tr><th>Memory Used</th><td>@m.MemoryUsedMB.ToString("N2") MB</td></tr>
+                                    <tr><th>Warmup</th><td>@(m.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                </tbody>
+                            </table>
+                        }
+                        else if (pythonResult != null)
+                        {
+                            <div class="alert alert-danger">@pythonResult.Message</div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No results yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (dotnetResult?.Success == true && pythonResult?.Success == true)
+        {
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Comparison Summary</h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        var dotnetAvg = dotnetResult.Metrics!.AverageTimePerIterationMs;
+                        var pythonAvg = pythonResult.Metrics!.AverageTimePerIterationMs;
+                        var faster = dotnetAvg < pythonAvg ? ".NET" : "Python";
+                        var diff = Math.Abs(dotnetAvg - pythonAvg);
+                        var percentDiff = (diff / Math.Max(dotnetAvg, pythonAvg)) * 100;
+                    }
+                    <div class="alert alert-info">
+                        <h6><strong>Performance Winner: @faster</strong></h6>
+                        <p class="mb-0">
+                            @faster is faster by <strong>@diff.ToString("N3") ms</strong> per iteration 
+                            (<strong>@percentDiff.ToString("N1")%</strong> improvement)
+                        </p>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>.NET Metrics</h6>
+                            <ul>
+                                <li>Avg: @dotnetAvg.ToString("N3") ms</li>
+                                <li>Memory: @dotnetResult.Metrics!.MemoryUsedMB.ToString("N2") MB</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Python Metrics</h6>
+                            <ul>
+                                <li>Avg: @pythonAvg.ToString("N3") ms</li>
+                                <li>Memory: @pythonResult.Metrics!.MemoryUsedMB.ToString("N2") MB</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private TestConfiguration config = new();
+    private TestResult? dotnetResult;
+    private TestResult? pythonResult;
+    private bool isRunning = false;
+    private bool dotnetHealthy = false;
+    private bool pythonHealthy = false;
+    private string statusMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckHealth();
+    }
+
+    private async Task CheckHealth()
+    {
+        dotnetHealthy = await ApiService.CheckDotNetHealthAsync();
+        pythonHealthy = await ApiService.CheckPythonHealthAsync();
+        StateHasChanged();
+    }
+
+    private async Task RunBothTests()
+    {
+        isRunning = true;
+        dotnetResult = null;
+        pythonResult = null;
+        statusMessage = "Running tests...";
+        StateHasChanged();
+
+        try
+        {
+            // Run both tests concurrently
+            var dotnetTask = ApiService.RunDotNetTestAsync(config);
+            var pythonTask = ApiService.RunPythonTestAsync(config);
+
+            await Task.WhenAll(dotnetTask, pythonTask);
+
+            dotnetResult = await dotnetTask;
+            pythonResult = await pythonTask;
+
+            statusMessage = "Tests completed!";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isRunning = false;
+            StateHasChanged();
+        }
+    }
+}
