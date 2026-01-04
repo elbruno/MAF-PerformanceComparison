@@ -218,6 +218,41 @@ async def execute_test(session: TestSession):
             session.status = "Stopped"
         else:
             session.status = "Completed"
+        # Export metrics JSON file for consistency with other repo artifacts
+        try:
+            current_timestamp = datetime.now(timezone.utc)
+            metrics_data = {
+                "TestInfo": {
+                    "Language": "Python",
+                    "Framework": "Python",
+                    "Provider": "Ollama",
+                    "Model": session.configuration.model,
+                    "Endpoint": session.configuration.endpoint,
+                    "Timestamp": current_timestamp.isoformat(),
+                    "WarmupSuccessful": session.warmup_successful,
+                    "WarmupTimeMs": session.warmup_time_ms
+                },
+                "MachineInfo": session.machine_info,
+                "Metrics": {
+                    "TotalIterations": session.total_iterations,
+                    "TotalExecutionTimeMs": session.elapsed_time_ms,
+                    "AverageTimePerIterationMs": (sum(session.iteration_times) / len(session.iteration_times)) if session.iteration_times else 0,
+                    "MinIterationTimeMs": min(session.iteration_times) if session.iteration_times else 0,
+                    "MaxIterationTimeMs": max(session.iteration_times) if session.iteration_times else 0,
+                    "MemoryUsedMB": session.memory_used_mb,
+                    "SuccessCount": session.success_count,
+                    "FailureCount": session.failure_count
+                }
+            }
+
+            stamp = current_timestamp.strftime("%Y%m%d_%H%M%S")
+            filename = f"metrics_python_ollama_{stamp}.json"
+            with open(filename, 'w') as f:
+                import json
+                json.dump(metrics_data, f, indent=2)
+            print(f"✓ Metrics exported to: {filename}")
+        except Exception as ex:
+            print(f"Failed to export metrics JSON: {ex}")
         
     except Exception as ex:
         session.status = "Failed"

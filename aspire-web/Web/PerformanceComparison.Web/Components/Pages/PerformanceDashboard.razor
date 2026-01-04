@@ -139,6 +139,22 @@
                                             <th>Max Time</th>
                                             <td>@dotnetStatus.MaxIterationTimeMs.ToString("F3") ms</td>
                                         </tr>
+                                        <tr>
+                                            <th>Last Iteration</th>
+                                            <td>@dotnetStatus.LastIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Iterations/sec</th>
+                                            <td>@dotnetStatus.IterationsPerSecond.ToString("F2")</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Est. Remaining</th>
+                                            <td>@((dotnetStatus.EstimatedTimeRemainingMs / 1000.0).ToString("F2")) s</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Success / Failure</th>
+                                            <td>@dotnetStatus.SuccessCount / @dotnetStatus.FailureCount</td>
+                                        </tr>
                                     }
                                     <tr>
                                         <th>Memory Used</th>
@@ -146,7 +162,8 @@
                                     </tr>
                                     <tr>
                                         <th>Warmup</th>
-                                        <td>@(dotnetStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td>
+                                        <td>@(dotnetStatus.WarmupSuccessful ? $"✓ Success ({dotnetStatus.WarmupTimeMs:F1} ms)" :
+                                                                                "✗ Failed")</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -216,6 +233,22 @@
                                             <th>Max Time</th>
                                             <td>@pythonStatus.MaxIterationTimeMs.ToString("F3") ms</td>
                                         </tr>
+                                        <tr>
+                                            <th>Last Iteration</th>
+                                            <td>@pythonStatus.LastIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Iterations/sec</th>
+                                            <td>@pythonStatus.IterationsPerSecond.ToString("F2")</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Est. Remaining</th>
+                                            <td>@((pythonStatus.EstimatedTimeRemainingMs / 1000.0).ToString("F2")) s</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Success / Failure</th>
+                                            <td>@pythonStatus.SuccessCount / @pythonStatus.FailureCount</td>
+                                        </tr>
                                     }
                                     <tr>
                                         <th>Memory Used</th>
@@ -223,7 +256,8 @@
                                     </tr>
                                     <tr>
                                         <th>Warmup</th>
-                                        <td>@(pythonStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td>
+                                        <td>@(pythonStatus.WarmupSuccessful ? $"✓ Success ({pythonStatus.WarmupTimeMs:F1} ms)" :
+                                                                                "✗ Failed")</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -465,9 +499,9 @@
 
             // Check if both tests are done
             var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status ==
-                        "Failed";
+                                    "Failed";
             var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status ==
-                        "Failed";
+                                    "Failed";
 
             if (dotnetDone && pythonDone)
             {

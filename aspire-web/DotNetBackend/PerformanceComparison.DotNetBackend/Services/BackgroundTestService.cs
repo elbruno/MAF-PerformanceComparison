@@ -7,6 +7,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using PerformanceComparison.DotNetBackend.Models;
+using System.Text.Json;
 
 namespace PerformanceComparison.DotNetBackend.Services;
 
@@ -169,6 +170,48 @@ public class BackgroundTestService
             session.ElapsedTimeMs = stopwatch.ElapsedMilliseconds;
             session.MemoryUsedMB = memoryUsed;
             session.MachineInfo = GetMachineInfo();
+
+            // Export metrics JSON file (optional - helps with consistency across repo)
+            try
+            {
+                var metricsData = new
+                {
+                    TestInfo = new
+                    {
+                        Language = "CSharp",
+                        Framework = "DotNet",
+                        Provider = "Ollama",
+                        Model = session.Configuration.Model,
+                        Endpoint = session.Configuration.Endpoint,
+                        Timestamp = DateTime.UtcNow.ToString("o"),
+                        WarmupSuccessful = session.WarmupSuccessful,
+                        WarmupTimeMs = session.WarmupTimeMs
+                    },
+                    MachineInfo = session.MachineInfo,
+                    Metrics = new
+                    {
+                        TotalIterations = session.TotalIterations,
+                        TotalExecutionTimeMs = session.ElapsedTimeMs,
+                        AverageTimePerIterationMs = session.IterationTimes.Any() ? session.IterationTimes.Average() : 0,
+                        MinIterationTimeMs = session.IterationTimes.Any() ? session.IterationTimes.Min() : 0,
+                        MaxIterationTimeMs = session.IterationTimes.Any() ? session.IterationTimes.Max() : 0,
+                        MemoryUsedMB = session.MemoryUsedMB,
+                        SuccessCount = session.SuccessCount,
+                        FailureCount = session.FailureCount
+                    }
+                };
+
+                var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+                var json = JsonSerializer.Serialize(metricsData, jsonOptions);
+                var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                var filename = $"metrics_dotnet_ollama_{stamp}.json";
+                File.WriteAllText(filename, json);
+                _logger.LogInformation("Metrics exported to {File}", filename);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to export metrics JSON");
+            }
 
             _logger.LogInformation("Test completed. Status: {Status}, Iterations: {Count}", session.Status, session.IterationTimes.Count);
         }

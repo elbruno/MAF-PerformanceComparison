@@ -57,7 +57,7 @@ public class PerformanceApiService
             var url = string.IsNullOrEmpty(sessionId) ? "api/performance/status" : $"api/performance/status?sessionId={sessionId}";
             var response = await _dotnetClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
-            
+
             var content = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<TestStatus>(content, options);
@@ -76,7 +76,7 @@ public class PerformanceApiService
         {
             var response = await _pythonClient.PostAsJsonAsync("api/performance/start", config);
             response.EnsureSuccessStatusCode();
-            
+
             var content = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<StartTestResponse>(content, options);
@@ -110,7 +110,7 @@ public class PerformanceApiService
             var url = string.IsNullOrEmpty(sessionId) ? "api/performance/status" : $"api/performance/status?sessionId={sessionId}";
             var response = await _pythonClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
-            
+
             var content = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<TestStatus>(content, options);
@@ -167,8 +167,14 @@ public class TestStatus
     public double AverageTimePerIterationMs { get; set; }
     public double MinIterationTimeMs { get; set; }
     public double MaxIterationTimeMs { get; set; }
+    public double LastIterationTimeMs { get; set; }
+    public double IterationsPerSecond { get; set; }
+    public double EstimatedTimeRemainingMs { get; set; }
+    public int SuccessCount { get; set; }
+    public int FailureCount { get; set; }
     public double MemoryUsedMB { get; set; }
     public bool WarmupSuccessful { get; set; }
+    public double WarmupTimeMs { get; set; }
     public string? ErrorMessage { get; set; }
     public TestConfiguration? Configuration { get; set; }
     public Dictionary<string, object>? MachineInfo { get; set; }
