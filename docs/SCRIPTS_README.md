@@ -1,214 +1,146 @@
 # Test Automation Scripts
 
-This directory contains scripts to automate performance testing and result organization for the Microsoft Agent Framework comparison project.
+The Microsoft Agent Framework performance testing suite is automated using a unified Python script that orchestrates both test execution and results analysis.
 
-## Available Scripts
+## Unified Test Runner
 
-### 1. Test Execution Scripts
+The `run_performance_tests.py` script is a cross-platform Python application that:
 
-#### Bash Script (Linux/Mac)
-
-```bash
-./run_tests.sh
-```
-
-#### PowerShell Script (Windows)
-
-```powershell
-.\run_tests.ps1
-```
-
-#### Batch Script (Windows)
-
-```batch
-run_tests.bat
-```
-
-### 2. Results Organization Script
-
-```bash
-python3 process_results_ollama.py
-```
+1. **Executes Tests**: Runs both .NET and Python Agent Framework implementations
+2. **Manages Environment**: Sets up test configuration and variables
+3. **Organizes Results**: Collects metrics into timestamped folders
+4. **Generates Reports**: Creates comparison markdown files
+5. **Analyzes Results**: Uses Ollama to generate AI-powered insights
 
 ## Usage Examples
 
 ### Basic Usage
 
-Run tests with default settings (standard mode, 1000 iterations, HelloWorld agent):
+Run tests with default settings (Ollama agent, standard mode, 10 iterations):
 
 ```bash
-# Linux/Mac
-./run_tests.sh
-
-# Windows PowerShell
-.\run_tests.ps1
-
-# Windows Command Prompt
-run_tests.bat
+python run_performance_tests.py
 ```
 
 ### Customize Test Mode
 
-Set the `TEST_MODE` environment variable to run different test modes:
+Specify different test modes using the `-m` or `--test-mode` flag:
 
 ```bash
-# Standard mode (default)
-TEST_MODE=standard ./run_tests.sh
+# Standard mode (default) - sequential execution
+python run_performance_tests.py -m standard
 
 # Batch processing mode
-TEST_MODE=batch BATCH_SIZE=20 ./run_tests.sh
+python run_performance_tests.py -m batch -b 20
 
 # Concurrent requests mode
-TEST_MODE=concurrent CONCURRENT_REQUESTS=10 ./run_tests.sh
+python run_performance_tests.py -m concurrent -c 10
 
 # Streaming mode
-TEST_MODE=streaming ./run_tests.sh
+python run_performance_tests.py -m streaming
 
 # Scenarios mode (tests multiple prompt types)
-TEST_MODE=scenarios ./run_tests.sh
-```
-
-PowerShell examples:
-
-```powershell
-# Batch mode
-.\run_tests.ps1 -TestMode batch -BatchSize 20
-
-# Concurrent mode
-.\run_tests.ps1 -TestMode concurrent -ConcurrentRequests 10
+python run_performance_tests.py -m scenarios
 ```
 
 ### Select Agent Type
 
-Use the `AGENT_TYPE` environment variable to choose which agent to test:
+Use the `-a` or `--agent-type` flag to choose which agent to test:
 
 ```bash
 # Test HelloWorld agent only
-AGENT_TYPE=HelloWorld ./run_tests.sh
+python run_performance_tests.py -a HelloWorld
 
 # Test AzureOpenAI agent only (requires .env configuration)
-AGENT_TYPE=AzureOpenAI ./run_tests.sh
+python run_performance_tests.py -a AzureOpenAI
 
 # Test Ollama agent only (requires Ollama installation)
-AGENT_TYPE=Ollama ./run_tests.sh
+python run_performance_tests.py -a Ollama
 
 # Test all available agents
-AGENT_TYPE=All ./run_tests.sh
-```
-
-PowerShell example:
-
-```powershell
-.\run_tests.ps1 -AgentType All
+python run_performance_tests.py -a All
 ```
 
 ### Customize Iteration Count
 
 ```bash
-# Run 500 iterations
-ITERATIONS=500 ./run_tests.sh
+# Run 100 iterations
+python run_performance_tests.py -i 100
 
-# Run 2000 iterations for more statistical significance
-ITERATIONS=2000 ./run_tests.sh
+# Run 1000 iterations for more statistical significance
+python run_performance_tests.py -i 1000
+
+# Run with custom batch size (for batch mode)
+python run_performance_tests.py -m batch -i 500 -b 25
 ```
 
-PowerShell example:
-
-```powershell
-.\run_tests.ps1 -Iterations 2000
-```
-
-### Combined Example
+### Combined Examples
 
 Run all agents in batch mode with 100 iterations and batch size of 15:
 
 ```bash
-TEST_MODE=batch BATCH_SIZE=15 ITERATIONS=100 AGENT_TYPE=All ./run_tests.sh
+python run_performance_tests.py -a All -m batch -i 100 -b 15
 ```
 
-PowerShell:
-
-```powershell
-.\run_tests.ps1 -TestMode batch -BatchSize 15 -Iterations 100 -AgentType All
-```
-
-## Organizing Test Results
-
-After running tests, use the `process_results_ollama.py` script to:
-
-1. Create a timestamped folder in `tests_results/`
-2. Move all metrics JSON files to the new folder
-3. Generate a comparison markdown file ready for LLM analysis
-4. **Automatically analyze the results using an Ollama agent** (using your test model)
+Run Ollama agent in concurrent mode with 50 concurrent requests and 200 iterations:
 
 ```bash
-python3 process_results_ollama.py
+python run_performance_tests.py -a Ollama -m concurrent -i 200 -c 50
 ```
 
-### Requirements
-
-Install the required dependencies:
+Test HelloWorld in streaming mode and skip automatic analysis:
 
 ```bash
-pip install -r requirements.txt
+python run_performance_tests.py -a HelloWorld -m streaming --skip-analysis
 ```
 
-### LLM Analysis Feature
+## Organizing and Analyzing Results
 
-The script analyzes test results using Ollama:
+The unified test runner automatically organizes and analyzes results after each test run. If you want to process existing metrics files without running tests:
 
-- Checks if Ollama is running on `http://localhost:11434` (or `OLLAMA_ENDPOINT` if set)
-- Uses the model specified in `OLLAMA_MODEL_NAME` (defaults to the model found in the metrics; fallback `ministral-3`)
-- No authentication required
+```bash
+# Process results only (without running tests)
+python run_performance_tests.py --process-only
+```
 
-**Configuration**
+### What Gets Generated
 
-Set environment variables in a `.env` file or shell:
+- **Timestamped Folder**: `tests_results/YYYYMMDD_HHMMSS_{test_mode}_{iterations}iter/`
+- **Comparison Report**: `comparison_report_{test_mode}_{iterations}iter.md` - Detailed metrics with LLM-ready prompts
+- **Analysis Report**: `analysis_report_{test_mode}_{iterations}iter.md` - AI-powered analysis from Ollama
+
+### Configuration
+
+Set environment variables in a `.env` file:
 
 ```bash
 # For Ollama
-export OLLAMA_ENDPOINT=http://localhost:11434
-export OLLAMA_MODEL_NAME=ministral-3
+OLLAMA_ENDPOINT=http://localhost:11434
+OLLAMA_MODEL_NAME=ministral-3
 ```
-
-**Output Files**
-
-The script will generate:
-
-- `comparison_report.md` - Detailed metrics comparison with LLM-ready prompts
-- `analysis_report.md` - **Automated analysis from Ollama** (if the service is reachable)
-
-The script will:
-
-- Find all `metrics_*.json` files in the current directory and subdirectories
-- Create a folder named `YYYYMMDD_HHMMSS_{test_mode}` in `tests_results/`
-- Move all metrics files to the new folder
-- Generate `comparison_report.md` with LLM-ready prompts for analysis
 
 ## Workflow Example
 
 Complete workflow for running tests and analyzing results:
 
 ```bash
-# 1. Run tests in standard mode
-TEST_MODE=standard ITERATIONS=1000 AGENT_TYPE=HelloWorld ./run_tests.sh
+# 1. Run tests in standard mode with 1000 iterations for HelloWorld agent
+python run_performance_tests.py -a HelloWorld -m standard -i 1000
 
-# 2. Organize results
-python3 process_results_ollama.py
+# 2. Results are automatically organized and analyzed
+# Results will be in: tests_results/YYYYMMDD_HHMMSS_standard_1000iter/
 
-# 3. Review the comparison report
-cat tests_results/[generated_folder]/comparison_report.md
-
-# 4. Copy the LLM prompts and paste into your AI assistant for analysis
+# 3. Or, process existing metrics without running tests
+python run_performance_tests.py --process-only
 ```
 
 ## Test Modes Reference
 
-| Mode | Description | Additional Parameters |
-|------|-------------|----------------------|
-| `standard` | Sequential execution (default) | - |
-| `batch` | Batch processing | `BATCH_SIZE` (default: 10) |
-| `concurrent` | Concurrent requests | `CONCURRENT_REQUESTS` (default: 5) |
+| Mode | Description | Parameters |
+|------|-------------|------------|
+| `standard` | Sequential execution | - |
+| `batch` | Batch processing | `-b, --batch-size` |
+| `concurrent` | Concurrent requests | `-c, --concurrent-requests` |
 | `streaming` | Streaming responses with TTFT | - |
 | `scenarios` | Multiple prompt types | - |
 
@@ -221,42 +153,57 @@ cat tests_results/[generated_folder]/comparison_report.md
 | `Ollama` | Local Ollama integration | Ollama installed and running |
 | `All` | Run all available agents | Optional for AzureOpenAI and Ollama |
 
-## Environment Variables
+## All Available Options
 
-### For Test Scripts
+View all available command-line options:
 
-- `TEST_MODE`: Test execution mode (standard, batch, concurrent, streaming, scenarios)
-- `ITERATIONS`: Number of test iterations (default: 1000)
-- `AGENT_TYPE`: Agent to test (HelloWorld, AzureOpenAI, Ollama, All)
-- `BATCH_SIZE`: Batch size for batch mode (default: 10)
-- `CONCURRENT_REQUESTS`: Concurrent requests for concurrent mode (default: 5)
+```bash
+python run_performance_tests.py --help
+```
 
-### For Agent Configuration
+Key options:
 
-See individual agent directories for specific configuration requirements:
+- `-a, --agent-type`: Agent type to test (default: Ollama)
+- `-m, --test-mode`: Test execution mode (default: standard)
+- `-i, --iterations`: Number of test iterations (default: 10)
+- `-b, --batch-size`: Batch size for batch mode (default: 10)
+- `-c, --concurrent-requests`: Concurrent requests (default: 5)
+- `--process-only`: Process results without running tests
+- `--skip-cleanup`: Skip cleaning old metrics files
+- `--skip-analysis`: Skip Ollama analysis in results
 
-- Azure OpenAI: Requires `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT_NAME`
-- Ollama: Optional `OLLAMA_ENDPOINT` and `OLLAMA_MODEL_NAME`
+## Output Files
+
+### Metrics Files
+
+Format: `metrics_{language}_{provider}_{timestamp}.json`
+
+Examples:
+
+- `metrics_dotnet_ollama_20260103_123456.json`
+- `metrics_python_ollama_20260103_123456.json`
+
+### Organized Results
+
+After running tests, results are in:
+
+```
+tests_results/
+└── 20260103_123456_standard_1000iter/
+    ├── metrics_dotnet_ollama_20260103_123456.json
+    ├── metrics_python_ollama_20260103_123456.json
+    ├── comparison_report_standard_1000iter.md
+    └── analysis_report_standard_1000iter.md
+```
 
 ## Troubleshooting
 
 ### Python Dependencies
 
-If Python tests fail with import errors, install dependencies:
+If tests fail with import errors, install dependencies:
 
 ```bash
-# For HelloWorld agent
-cd python/hello_world_agent
 pip install -r requirements.txt
-
-# For all agents
-for dir in python/*/; do
-    if [ -f "$dir/requirements.txt" ]; then
-        cd "$dir"
-        pip install -r requirements.txt
-        cd ../..
-    fi
-done
 ```
 
 ### .NET Build Issues
@@ -265,48 +212,15 @@ If .NET tests fail to build:
 
 ```bash
 # Restore NuGet packages
-cd dotnet/HelloWorldAgent
+cd dotnet/OllamaAgent
 dotnet restore
 dotnet build
 ```
 
-### Script Execution Permissions
+### Ollama Not Reachable
 
-If you get permission errors on Linux/Mac:
+If analysis fails with connection errors:
 
-```bash
-chmod +x run_tests.sh process_results_ollama.py
-```
-
-## Output Files
-
-### Metrics Files
-
-Format: `metrics_{language}_{provider}_{testmode}_{timestamp}.json`
-
-Examples:
-
-- `metrics_dotnet_helloworld_standard_20260103_123456.json`
-- `metrics_python_ollama_batch_20260103_123456.json`
-
-### Organized Results
-
-After running `process_results_ollama.py`:
-
-```
-tests_results/
-└── 20260103_123456_standard/
-    ├── metrics_dotnet_helloworld_standard_20260103_123456.json
-    ├── metrics_python_helloworld_standard_20260103_123456.json
-    ├── comparison_report.md
-    └── analysis_report.md
-```
-
-## Next Steps
-
-After organizing results:
-
-1. Open `comparison_report.md` in the generated folder
-2. Copy the LLM comparison prompts
-3. Paste into your preferred AI assistant (ChatGPT, Claude, Copilot, etc.)
-4. Review the performance analysis and insights
+1. Verify Ollama is running: `ollama serve`
+2. Check endpoint: `curl http://localhost:11434/api/tags`
+3. Set custom endpoint: Use `OLLAMA_ENDPOINT` environment variable

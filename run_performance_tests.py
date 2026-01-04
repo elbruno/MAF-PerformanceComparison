@@ -1,22 +1,32 @@
 #!/usr/bin/env python3
 """
-Process Ollama performance test results, generate comparison markdown, and produce
-an Ollama-driven analysis report using the model under test.
+Unified performance test runner for Microsoft Agent Framework implementations.
+
+This script orchestrates tests for both .NET and Python Agent Framework implementations,
+supports multiple test modes and agent types, and automatically generates performance
+comparison reports.
 
 Workflow:
-1. Discover Ollama metrics JSON files (root, dotnet/**, python/**).
-2. Move them into tests_results/<timestamp>_<testmode>/.
-3. Create comparison_report.md that embeds the comparison prompt built from
-   docs/comparison_prompt_template.md and the collected metrics.
-4. Call an Ollama agent (using the same model as the tests when available) to
-   generate analysis_report.md in the same folder.
+1. Configure environment variables for tests
+2. Clean up old metrics files
+3. Run specified agent tests (.NET and Python)
+4. Process results and generate comparison reports
+5. Generate AI-driven analysis using Ollama
+
+Supported test modes: standard, batch, concurrent, streaming, scenarios
+Supported agent types: HelloWorld, AzureOpenAI, Ollama, All
 """
 
+import argparse
 import glob
 import json
 import os
+import platform
 import shutil
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -32,6 +42,231 @@ except ImportError:
 
 DEFAULT_TEST_MODE = "standard"
 COMPARISON_TEMPLATE_PATH = os.path.join("docs", "comparison_prompt_template.md")
+
+# Color codes for cross-platform output
+class Colors:
+    """Cross-platform color output support."""
+
+    CYAN = "\033[36m" if platform.system() != "Windows" else ""
+    GREEN = "\033[32m" if platform.system() != "Windows" else ""
+    YELLOW = "\033[33m" if platform.system() != "Windows" else ""
+    RED = "\033[31m" if platform.system() != "Windows" else ""
+    RESET = "\033[0m" if platform.system() != "Windows" else ""
+
+
+def print_colored(message: str, color: str = "WHITE") -> None:
+    """Print colored output, with graceful fallback for Windows."""
+    color_map = {
+        "CYAN": Colors.CYAN,
+        "GREEN": Colors.GREEN,
+        "YELLOW": Colors.YELLOW,
+        "RED": Colors.RED,
+    }
+    color_code = color_map.get(color.upper(), "")
+    reset = Colors.RESET if color_code else ""
+    print(f"{color_code}{message}{reset}")
+
+
+def find_python_executable() -> Optional[str]:
+    """Find available Python executable."""
+    for cmd in ["py", "python3", "python"]:
+        try:
+            result = subprocess.run([cmd, "--version"], capture_output=True, check=False)
+            if result.returncode == 0:
+                return cmd
+        except FileNotFoundError:
+            continue
+    return None
+
+
+def clean_old_metrics(script_dir: str) -> int:
+    """Remove old metrics files before running tests."""
+    print_colored("Cleaning up old metrics files...", "CYAN")
+
+    metrics_patterns = [
+        os.path.join(script_dir, "metrics_*.json"),
+        os.path.join(script_dir, "dotnet", "**", "metrics_*.json"),
+        os.path.join(script_dir, "python", "**", "metrics_*.json"),
+    ]
+
+    deleted_count = 0
+    for pattern in metrics_patterns:
+        for metrics_file in glob.glob(pattern, recursive=True):
+            # Skip files in tests_results folder
+            if "tests_results" not in metrics_file.replace("\\", "/"):
+                try:
+                    os.remove(metrics_file)
+                    print(f"  Deleted: {os.path.basename(metrics_file)}")
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"  Failed to delete {metrics_file}: {e}")
+
+    if deleted_count > 0:
+        print_colored(f"Cleaned up {deleted_count} old metrics file(s)", "GREEN")
+    else:
+        print_colored("No old metrics files found", "GREEN")
+    print()
+
+
+def run_dotnet_test(
+    agent_dir: str, agent_name: str, test_config: Dict[str, Any]
+) -> bool:
+    """Run a .NET agent test."""
+    if not os.path.isdir(agent_dir):
+        print_colored(
+            f"Skipping .NET {agent_name}: directory not found: {agent_dir}",
+            "YELLOW",
+        )
+        return True
+
+    print_colored(f"Running .NET {agent_name} test...", "YELLOW")
+
+    # Set environment variables
+    env = os.environ.copy()
+    env["TEST_MODE"] = test_config["test_mode"]
+    env["ITERATIONS"] = str(test_config["iterations"])
+    env["BATCH_SIZE"] = str(test_config["batch_size"])
+    env["CONCURRENT_REQUESTS"] = str(test_config["concurrent_requests"])
+
+    try:
+        # Build
+        result = subprocess.run(
+            ["dotnet", "build"],
+            cwd=agent_dir,
+            env=env,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            print_colored(f"Failed to build .NET project: {result.stderr.decode()}", "RED")
+            return False
+
+        # Run
+        result = subprocess.run(
+            ["dotnet", "run"],
+            cwd=agent_dir,
+            env=env,
+            check=False,
+        )
+
+        if result.returncode == 0:
+            print_colored(f"[OK] .NET {agent_name} test completed", "GREEN")
+        else:
+            print_colored(f"[FAILED] .NET {agent_name} test failed", "RED")
+            return False
+
+    except Exception as e:
+        print_colored(f"Error running .NET test: {e}", "RED")
+        return False
+
+    print()
+    return True
+
+
+def run_python_test(
+    agent_dir: str, agent_name: str, test_config: Dict[str, Any]
+) -> bool:
+    """Run a Python agent test."""
+    if not os.path.isdir(agent_dir):
+        print_colored(
+            f"Skipping Python {agent_name}: directory not found: {agent_dir}",
+            "YELLOW",
+        )
+        return True
+
+    print_colored(f"Running Python {agent_name} test...", "YELLOW")
+
+    # Set environment variables
+    env = os.environ.copy()
+    env["TEST_MODE"] = test_config["test_mode"]
+    env["ITERATIONS"] = str(test_config["iterations"])
+    env["BATCH_SIZE"] = str(test_config["batch_size"])
+    env["CONCURRENT_REQUESTS"] = str(test_config["concurrent_requests"])
+
+    python_exe = find_python_executable()
+    if not python_exe:
+        print_colored(
+            f"Python not found on PATH. To run Python tests, install Python.",
+            "YELLOW",
+        )
+        print_colored(f"Skipping Python {agent_name} test.", "YELLOW")
+        print()
+        return True
+
+    try:
+        result = subprocess.run(
+            [python_exe, "main.py"],
+            cwd=agent_dir,
+            env=env,
+            check=False,
+        )
+
+        if result.returncode == 0:
+            print_colored(f"[OK] Python {agent_name} test completed", "GREEN")
+        else:
+            print_colored(f"[FAILED] Python {agent_name} test failed", "RED")
+            req_file = os.path.join(agent_dir, "requirements.txt")
+            if os.path.isfile(req_file):
+                print_colored(
+                    f"To install requirements run: {python_exe} -m pip install -r {req_file}",
+                    "YELLOW",
+                )
+            return False
+
+    except Exception as e:
+        print_colored(f"Error running Python test: {e}", "RED")
+        return False
+
+    print()
+    return True
+
+
+def run_agent_tests(script_dir: str, agent_type: str, test_config: Dict[str, Any]) -> bool:
+    """Execute tests for specified agent type."""
+    success = True
+
+    if agent_type in ["HelloWorld", "All"]:
+        success &= run_dotnet_test(
+            os.path.join(script_dir, "dotnet", "HelloWorldAgent"),
+            "HelloWorld",
+            test_config,
+        )
+        success &= run_python_test(
+            os.path.join(script_dir, "python", "hello_world_agent"),
+            "HelloWorld",
+            test_config,
+        )
+
+    if agent_type in ["AzureOpenAI", "All"]:
+        success &= run_dotnet_test(
+            os.path.join(script_dir, "dotnet", "AzureOpenAIAgent"),
+            "AzureOpenAI",
+            test_config,
+        )
+        success &= run_python_test(
+            os.path.join(script_dir, "python", "azure_openai_agent"),
+            "AzureOpenAI",
+            test_config,
+        )
+
+    if agent_type in ["Ollama", "All"]:
+        success &= run_dotnet_test(
+            os.path.join(script_dir, "dotnet", "OllamaAgent"),
+            "Ollama",
+            test_config,
+        )
+        success &= run_python_test(
+            os.path.join(script_dir, "python", "ollama_agent"),
+            "Ollama",
+            test_config,
+        )
+
+    return success
+
+
+# ============================================================================
+# Results Processing Functions (from original process_results_ollama.py)
+# ============================================================================
 
 
 def find_metrics_files(search_dir: str = ".") -> List[str]:
@@ -293,27 +528,27 @@ def create_comparison_markdown(
                 f"- Processors: {machine_info.get('ProcessorCount', 'N/A')} cores ({machine_info.get('LogicalProcessorCount', 'N/A')} logical)",
             ]
         )
-        
+
         # Add CPU frequency if available
-        if machine_info.get('CPUMaxFreqGHz'):
+        if machine_info.get("CPUMaxFreqGHz"):
             markdown_lines.append(f"- CPU Max Frequency: {machine_info.get('CPUMaxFreqGHz')} GHz")
-        if machine_info.get('CPUMaxSpeedGHz'):
+        if machine_info.get("CPUMaxSpeedGHz"):
             markdown_lines.append(f"- CPU Max Speed: {machine_info.get('CPUMaxSpeedGHz')} GHz")
-        
+
         # Add memory info
-        if machine_info.get('TotalMemoryGB'):
+        if machine_info.get("TotalMemoryGB"):
             markdown_lines.append(f"- Total Memory: {machine_info.get('TotalMemoryGB')} GB")
-        if machine_info.get('AvailableMemoryGB'):
+        if machine_info.get("AvailableMemoryGB"):
             markdown_lines.append(f"- Available Memory: {machine_info.get('AvailableMemoryGB')} GB")
-        
+
         # Add GPU info if available
-        if machine_info.get('GPUModel'):
+        if machine_info.get("GPUModel"):
             markdown_lines.append(f"- GPU: {machine_info.get('GPUModel')} ({machine_info.get('GPUMemoryMB', 'N/A')})")
-        
+
         # Add Python version if available
-        if machine_info.get('PythonVersion'):
+        if machine_info.get("PythonVersion"):
             markdown_lines.append(f"- Python Version: {machine_info.get('PythonVersion')}")
-        
+
         markdown_lines.extend(
             [
                 "",
@@ -489,14 +724,12 @@ def pick_ollama_model(metrics: List[Dict[str, Any]]) -> str:
     return "ministral-3"
 
 
-def main() -> int:
-    """Entry point for processing Ollama metrics and generating reports."""
+def process_results(script_dir: str) -> int:
+    """Process test results and generate reports."""
 
-    load_dotenv()
-
-    print("=" * 60)
-    print("Ollama - Performance Results Processor")
-    print("=" * 60)
+    print_colored("=" * 60, "GREEN")
+    print_colored("Ollama - Performance Results Processor", "GREEN")
+    print_colored("=" * 60, "GREEN")
     print()
     print("Searching for metrics files...")
 
@@ -520,7 +753,10 @@ def main() -> int:
     print()
 
     print("Moving new metrics files...")
-    copied_files = copy_metrics_files([m["_filepath"] for m in ollama_metrics if m.get("_filepath")], destination_folder)
+    copied_files = copy_metrics_files(
+        [m["_filepath"] for m in ollama_metrics if m.get("_filepath")],
+        destination_folder,
+    )
     print()
 
     # Reload from current location to ensure paths/filenames are accurate
@@ -532,7 +768,9 @@ def main() -> int:
 
     template_body = load_comparison_template()
     print("Generating comparison report...")
-    comparison_file, prompts = create_comparison_markdown(reloaded_metrics, destination_folder, template_body, test_mode, iterations)
+    comparison_file, prompts = create_comparison_markdown(
+        reloaded_metrics, destination_folder, template_body, test_mode, iterations
+    )
     print(f"  ✓ Created: {os.path.basename(comparison_file)}")
     print()
 
@@ -546,9 +784,9 @@ def main() -> int:
         print("  ✗ Analysis was skipped or failed.")
     print()
 
-    print("=" * 60)
-    print("Processing complete!")
-    print("=" * 60)
+    print_colored("=" * 60, "GREEN")
+    print_colored("Processing complete!", "GREEN")
+    print_colored("=" * 60, "GREEN")
     print()
     print(f"Results location: {destination_folder}")
     print(f"Files moved: {len(copied_files)}")
@@ -564,6 +802,146 @@ def main() -> int:
         print("1. Review comparison_report.md and use the embedded prompts with your LLM.")
 
     return 0
+
+
+# ============================================================================
+# Main Entry Point
+# ============================================================================
+
+
+def main() -> int:
+    """Main entry point for unified performance test runner."""
+
+    parser = argparse.ArgumentParser(
+        description="Run Microsoft Agent Framework performance tests and generate reports",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run Ollama tests with 100 iterations
+  python run_performance_tests.py -i 100 -a Ollama
+  
+  # Run all agent types in batch mode
+  python run_performance_tests.py -m batch -a All
+  
+  # Run concurrent tests with 50 requests
+  python run_performance_tests.py -m concurrent -c 50
+  
+  # Process results only (without running tests)
+  python run_performance_tests.py --process-only
+        """,
+    )
+
+    parser.add_argument(
+        "-a",
+        "--agent-type",
+        default="Ollama",
+        choices=["HelloWorld", "AzureOpenAI", "Ollama", "All"],
+        help="Agent type to test (default: Ollama)",
+    )
+    parser.add_argument(
+        "-m",
+        "--test-mode",
+        default="standard",
+        choices=["standard", "batch", "concurrent", "streaming", "scenarios"],
+        help="Test mode (default: standard)",
+    )
+    parser.add_argument(
+        "-i",
+        "--iterations",
+        type=int,
+        default=10,
+        help="Number of test iterations (default: 10)",
+    )
+    parser.add_argument(
+        "-b",
+        "--batch-size",
+        type=int,
+        default=10,
+        help="Batch size for batch mode (default: 10)",
+    )
+    parser.add_argument(
+        "-c",
+        "--concurrent-requests",
+        type=int,
+        default=5,
+        help="Number of concurrent requests (default: 5)",
+    )
+    parser.add_argument(
+        "--process-only",
+        action="store_true",
+        help="Process results only without running tests",
+    )
+    parser.add_argument(
+        "--skip-cleanup",
+        action="store_true",
+        help="Skip cleaning old metrics files",
+    )
+    parser.add_argument(
+        "--skip-analysis",
+        action="store_true",
+        help="Generate reports but skip Ollama analysis",
+    )
+
+    args = parser.parse_args()
+
+    load_dotenv()
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+
+    # Display configuration
+    print_colored("=" * 60, "CYAN")
+    print_colored("Microsoft Agent Framework Performance Tests", "CYAN")
+    print_colored("=" * 60, "CYAN")
+    print()
+
+    if args.process_only:
+        print_colored("Running in process-only mode (results processing)", "CYAN")
+        print()
+        return process_results(script_dir)
+
+    print_colored("Configuration:", "GREEN")
+    print(f"  Agent Type: {args.agent_type}")
+    print(f"  Test Mode: {args.test_mode}")
+    print(f"  Iterations: {args.iterations}")
+    if args.test_mode == "batch":
+        print(f"  Batch Size: {args.batch_size}")
+    if args.test_mode == "concurrent":
+        print(f"  Concurrent Requests: {args.concurrent_requests}")
+    print()
+
+    # Clean up old metrics
+    if not args.skip_cleanup:
+        clean_old_metrics(script_dir)
+
+    # Create test configuration
+    test_config = {
+        "test_mode": args.test_mode,
+        "iterations": args.iterations,
+        "batch_size": args.batch_size,
+        "concurrent_requests": args.concurrent_requests,
+    }
+
+    # Run tests
+    print_colored("Running tests...", "CYAN")
+    print()
+    if not run_agent_tests(script_dir, args.agent_type, test_config):
+        print_colored("Some tests failed", "YELLOW")
+        print()
+
+    print_colored("=" * 60, "GREEN")
+    print_colored("All tests completed!", "GREEN")
+    print_colored("=" * 60, "GREEN")
+    print()
+
+    # Process results
+    if args.skip_analysis:
+        print("Skipping results processing (--skip-analysis flag set)")
+        return 0
+
+    print("Processing results...")
+    print()
+    return process_results(script_dir)
 
 
 if __name__ == "__main__":

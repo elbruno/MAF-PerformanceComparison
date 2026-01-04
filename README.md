@@ -19,50 +19,50 @@ The fastest way to get started is using Ollama with local models:
 
 ### Run Tests
 
-**PowerShell (Windows):**
+Use the unified Python test runner to execute tests and generate reports:
 
-```powershell
-.\run_tests.ps1
+```python
+python run_performance_tests.py
 ```
 
-**Bash (Linux/Mac):**
-
-```bash
-./run_tests.sh
-```
-
-**Command Prompt (Windows):**
-
-```cmd
-run_tests.bat
-```
-
-These scripts will:
+This will:
 
 - Run performance tests for both .NET and Python implementations
-- Use Ollama by default (10 iterations)
-- Export metrics to JSON files for analysis
+- Use Ollama by default (10 iterations in standard mode)
+- Export metrics to JSON files
+- Automatically organize results and generate comparison reports
+- Generate AI-powered analysis using Ollama
 
 ### Customize Test Parameters
 
-```powershell
-# Run with 1000 iterations in different test modes
-.\run_tests.ps1 -Iterations 1000 -TestMode standard
-.\run_tests.ps1 -Iterations 1000 -TestMode batch
-.\run_tests.ps1 -Iterations 1000 -TestMode concurrent
-.\run_tests.ps1 -Iterations 1000 -TestMode streaming
-.\run_tests.ps1 -Iterations 1000 -TestMode scenarios
+```bash
+# Run with 100 iterations in standard mode
+python run_performance_tests.py -i 100
+
+# Run all agent types with 1000 iterations
+python run_performance_tests.py -a All -i 1000
+
+# Run tests in batch mode with custom batch size
+python run_performance_tests.py -m batch -b 20
+
+# Run tests in concurrent mode with 10 parallel requests
+python run_performance_tests.py -m concurrent -c 10
+
+# Test different modes
+python run_performance_tests.py -m streaming
+python run_performance_tests.py -m scenarios
+
+# Process results only (without running tests)
+python run_performance_tests.py --process-only
+
+# Run tests but skip Ollama analysis
+python run_performance_tests.py --skip-analysis
 ```
 
-**Bash:**
+**View all options:**
 
 ```bash
-# Run with 1000 iterations in different test modes
-ITERATIONS=1000 TEST_MODE=standard ./run_tests.sh
-ITERATIONS=1000 TEST_MODE=batch ./run_tests.sh
-ITERATIONS=1000 TEST_MODE=concurrent ./run_tests.sh
-ITERATIONS=1000 TEST_MODE=streaming ./run_tests.sh
-ITERATIONS=1000 TEST_MODE=scenarios ./run_tests.sh
+python run_performance_tests.py --help
 ```
 
 ## Test Modes
@@ -73,20 +73,19 @@ ITERATIONS=1000 TEST_MODE=scenarios ./run_tests.sh
 - **streaming**: Streaming responses with time-to-first-token metrics
 - **scenarios**: Multiple prompt types (simple, reasoning, conceptual)
 
-## Organize and Analyze Results
+## Results Organization and Analysis
 
-After running tests, organize the results:
+The unified test runner automatically organizes and analyzes results after each test run. Results are:
+
+- **Organized** into timestamped folders in `tests_results/`
+- **Compared** using comparison reports with LLM prompts
+- **Analyzed** with AI-powered insights from your Ollama model
+
+You can also manually process existing metrics files:
 
 ```bash
-python process_results_ollama.py
+python run_performance_tests.py --process-only
 ```
-
-This will:
-
-- Create timestamped folders in `tests_results/`
-- Move all metrics files to organized folders
-- Generate comparison reports using the provided prompt template
-- Automatically analyze results with an Ollama agent (using the test model)
 
 ## What Gets Measured
 
