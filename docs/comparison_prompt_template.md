@@ -15,6 +15,19 @@ I have two performance test results from running the Microsoft Agent Framework i
     "Framework": "DotNet",
     "Provider": "Ollama",
     "Model": "ministral-3",
+   "MachineInfo": {
+      "OSSystem": "Windows",
+      "OSRelease": "11",
+      "Architecture": "x86_64",
+      "ProcessorCount": 16,
+      "LogicalProcessorCount": 24,
+      "CPUMaxFreqGHz": 5.8,
+      "DotNetVersion": ".NET 10.0.0",
+      "TotalMemoryGB": 64.0,
+      "AvailableMemoryGB": 48.5,
+      "GPUModel": "NVIDIA GeForce RTX 3080",
+      "GPUMemoryMB": "10240"
+   },
     "Endpoint": "http://localhost:11434",
     "Timestamp": "2026-01-03T16:44:48.6552059\u002B00:00",
     "WarmupSuccessful": true
@@ -43,6 +56,19 @@ I have two performance test results from running the Microsoft Agent Framework i
     "Timestamp": "2026-01-03T16:48:44.735982+00:00",
     "WarmupSuccessful": true
   },
+   "MachineInfo": {
+      "OSSystem": "Windows",
+      "OSRelease": "11",
+      "Architecture": "x86_64",
+      "ProcessorCount": 16,
+      "LogicalProcessorCount": 24,
+      "CPUMaxFreqGHz": 5.8,
+      "PythonVersion": "3.11.9",
+      "TotalMemoryGB": 64.0,
+      "AvailableMemoryGB": 47.9,
+      "GPUModel": "NVIDIA GeForce RTX 3080",
+      "GPUMemoryMB": "10240"
+   },
   "Metrics": {
     "TotalIterations": 1000,
     "TotalExecutionTimeMs": 204568.12357902527,
@@ -59,6 +85,7 @@ Please provide a comprehensive comparison that includes:
 1. **Test Environment & Configuration:**
    - Language/Framework used (C#/.NET vs Python)
    - AI Provider and Model
+   - Runtime versions (.NET / Python)
    - Machine specifications (OS, CPU, Memory, GPU if available)
    - Warmup status
    - Test timestamp
@@ -154,6 +181,7 @@ Each metrics JSON file now contains comprehensive information:
     "ProcessorCount": 8,
     "LogicalProcessorCount": 16,
     "CPUMaxFreqGHz": 3.6,
+      "DotNetVersion": ".NET 10.0.0",
     "TotalMemoryGB": 16.0,
     "AvailableMemoryGB": 8.5,
     "MemoryPercentUsed": 47.5,
