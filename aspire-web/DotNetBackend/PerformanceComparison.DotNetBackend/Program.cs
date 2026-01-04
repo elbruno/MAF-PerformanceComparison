@@ -18,8 +18,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add performance test service
-builder.Services.AddSingleton<PerformanceTestService>();
+// Add background test service
+builder.Services.AddSingleton<BackgroundTestService>();
 
 var app = builder.Build();
 

@@ -1,197 +1,222 @@
 @page "/dashboard"
 @using PerformanceComparison.Web.Models
 @using PerformanceComparison.Web.Services
+@using System.Text.Json
+@using System.Timers
 @inject PerformanceApiService ApiService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
 @rendermode InteractiveServer
 
-<PageTitle>Performance Comparison</PageTitle>
+<PageTitle>Performance Dashboard</PageTitle>
 
 <div class="container-fluid">
-    <h1 class="mb-4">Microsoft Agent Framework - Performance Comparison</h1>
+    <h1 class="mb-4">Microsoft Agent Framework - Performance Dashboard</h1>
     <p class="lead">Real-time performance comparison between .NET and Python agent implementations</p>
 
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Test Configuration</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
+    <!-- Test Configuration Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => configCollapsed = !configCollapsed">
+            <h5 class="mb-0">Test Configuration</h5>
+            <span class="badge bg-light text-dark">@(configCollapsed ? "▼" : "▲")</span>
+        </div>
+        @if (!configCollapsed)
+        {
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Number of Iterations</label>
-                        <input type="number" class="form-control" @bind="config.Iterations" min="1" max="1000" />
-                        <small class="text-muted">Default: 10</small>
+                        <input type="number" class="form-control" @bind="config.Iterations" min="1" max="10000" />
                     </div>
-                    <div class="mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Model</label>
                         <input type="text" class="form-control" @bind="config.Model" />
-                        <small class="text-muted">e.g., ministral-3, llama2, mistral</small>
                     </div>
-                    <div class="mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Endpoint</label>
                         <input type="text" class="form-control" @bind="config.Endpoint" />
-                        <small class="text-muted">Ollama endpoint URL</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Test Mode</label>
-                        <select class="form-select" @bind="config.TestMode">
-                            <option value="standard">Standard</option>
-                            <option value="batch">Batch</option>
-                            <option value="concurrent">Concurrent</option>
-                            <option value="streaming">Streaming</option>
-                            <option value="scenarios">Scenarios</option>
-                        </select>
-                    </div>
-                    @if (config.TestMode == "batch")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Batch Size</label>
-                            <input type="number" class="form-control" @bind="config.BatchSize" min="1" max="100" />
-                        </div>
-                    }
-                    @if (config.TestMode == "concurrent")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Concurrent Requests</label>
-                            <input type="number" class="form-control" @bind="config.ConcurrentRequests" min="1" max="20" />
-                        </div>
-                    }
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary btn-lg" @onclick="RunBothTests" disabled="@isRunning">
-                            @if (isRunning)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2"></span>
-                                <span>Running Tests...</span>
-                            }
-                            else
-                            {
-                                <span>Run Performance Tests</span>
-                            }
-                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Service Status</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span><strong>.NET Backend:</strong></span>
-                        <span class="badge @(dotnetHealthy ? "bg-success" : "bg-danger")">
-                            @(dotnetHealthy ? "Healthy" : "Offline")
-                        </span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span><strong>Python Backend:</strong></span>
-                        <span class="badge @(pythonHealthy ? "bg-success" : "bg-danger")">
-                            @(pythonHealthy ? "Healthy" : "Offline")
-                        </span>
-                    </div>
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="CheckHealth">
-                        <i class="bi bi-arrow-repeat"></i> Refresh Status
+                <div class="d-grid gap-2 d-md-flex">
+                    <button class="btn btn-success btn-lg" @onclick="StartBothTests" disabled="@isRunning">
+                        <span class="bi bi-play-fill"></span> Start Tests
+                    </button>
+                    <button class="btn btn-danger btn-lg" @onclick="StopBothTests" disabled="@(!isRunning)">
+                        <span class="bi bi-stop-fill"></span> Stop Tests
+                    </button>
+                    <button class="btn btn-primary btn-lg" @onclick="ExportResults" disabled="@(dotnetStatus == null && pythonStatus == null)">
+                        <span class="bi bi-download"></span> Export Results
                     </button>
                 </div>
             </div>
+        }
+    </div>
 
-            @if (!string.IsNullOrEmpty(statusMessage))
-            {
-                <div class="alert alert-info mt-3" role="alert">
-                    @statusMessage
+    <!-- Service Status Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => statusCollapsed = !statusCollapsed">
+            <h5 class="mb-0">Service Status</h5>
+            <span class="badge bg-light text-dark">@(statusCollapsed ? "▼" : "▲")</span>
+        </div>
+        @if (!statusCollapsed)
+        {
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span><strong>.NET Backend:</strong></span>
+                    <span class="badge @(dotnetHealthy ? "bg-success" : "bg-danger")">
+                        @(dotnetHealthy ? "Healthy" : "Offline")
+                    </span>
                 </div>
-            }
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span><strong>Python Backend:</strong></span>
+                    <span class="badge @(pythonHealthy ? "bg-success" : "bg-danger")">
+                        @(pythonHealthy ? "Healthy" : "Offline")
+                    </span>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CheckHealth">
+                    <span class="bi bi-arrow-repeat"></span> Refresh Status
+                </button>
+                @if (!string.IsNullOrEmpty(statusMessage))
+                {
+                    <div class="alert alert-info mt-3 mb-0" role="alert">@statusMessage</div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <!-- .NET Results Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => dotnetCollapsed = !dotnetCollapsed">
+                    <h5 class="mb-0">.NET Results</h5>
+                    <span class="badge bg-light text-dark">@(dotnetCollapsed ? "▼" : "▲")</span>
+                </div>
+                @if (!dotnetCollapsed)
+                {
+                    <div class="card-body">
+                        @if (dotnetStatus != null)
+                        {
+                            <h6>Status: <span class="badge @GetStatusBadgeClass(dotnetStatus.Status)">@dotnetStatus.Status</span></h6>
+                            
+                            @if (dotnetStatus.Status == "Running")
+                            {
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" 
+                                         style="width: @(dotnetStatus.ProgressPercentage)%"
+                                         aria-valuenow="@dotnetStatus.ProgressPercentage" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        @dotnetStatus.ProgressPercentage.ToString("F1")%
+                                    </div>
+                                </div>
+                            }
+
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><th>Iterations</th><td>@dotnetStatus.CurrentIteration / @dotnetStatus.TotalIterations</td></tr>
+                                    <tr><th>Elapsed Time</th><td>@(dotnetStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td></tr>
+                                    @if (dotnetStatus.AverageTimePerIterationMs > 0)
+                                    {
+                                        <tr><th>Average Time</th><td>@dotnetStatus.AverageTimePerIterationMs.ToString("F3") ms</td></tr>
+                                        <tr><th>Min Time</th><td>@dotnetStatus.MinIterationTimeMs.ToString("F3") ms</td></tr>
+                                        <tr><th>Max Time</th><td>@dotnetStatus.MaxIterationTimeMs.ToString("F3") ms</td></tr>
+                                    }
+                                    <tr><th>Memory Used</th><td>@dotnetStatus.MemoryUsedMB.ToString("F2") MB</td></tr>
+                                    <tr><th>Warmup</th><td>@(dotnetStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                </tbody>
+                            </table>
+
+                            @if (!string.IsNullOrEmpty(dotnetStatus.ErrorMessage))
+                            {
+                                <div class="alert alert-danger">@dotnetStatus.ErrorMessage</div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">No test running or completed</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Python Results Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => pythonCollapsed = !pythonCollapsed">
+                    <h5 class="mb-0">Python Results</h5>
+                    <span class="badge bg-light text-dark">@(pythonCollapsed ? "▼" : "▲")</span>
+                </div>
+                @if (!pythonCollapsed)
+                {
+                    <div class="card-body">
+                        @if (pythonStatus != null)
+                        {
+                            <h6>Status: <span class="badge @GetStatusBadgeClass(pythonStatus.Status)">@pythonStatus.Status</span></h6>
+                            
+                            @if (pythonStatus.Status == "Running")
+                            {
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                         role="progressbar" 
+                                         style="width: @(pythonStatus.ProgressPercentage)%"
+                                         aria-valuenow="@pythonStatus.ProgressPercentage" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        @pythonStatus.ProgressPercentage.ToString("F1")%
+                                    </div>
+                                </div>
+                            }
+
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><th>Iterations</th><td>@pythonStatus.CurrentIteration / @pythonStatus.TotalIterations</td></tr>
+                                    <tr><th>Elapsed Time</th><td>@(pythonStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td></tr>
+                                    @if (pythonStatus.AverageTimePerIterationMs > 0)
+                                    {
+                                        <tr><th>Average Time</th><td>@pythonStatus.AverageTimePerIterationMs.ToString("F3") ms</td></tr>
+                                        <tr><th>Min Time</th><td>@pythonStatus.MinIterationTimeMs.ToString("F3") ms</td></tr>
+                                        <tr><th>Max Time</th><td>@pythonStatus.MaxIterationTimeMs.ToString("F3") ms</td></tr>
+                                    }
+                                    <tr><th>Memory Used</th><td>@pythonStatus.MemoryUsedMB.ToString("F2") MB</td></tr>
+                                    <tr><th>Warmup</th><td>@(pythonStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                </tbody>
+                            </table>
+
+                            @if (!string.IsNullOrEmpty(pythonStatus.ErrorMessage))
+                            {
+                                <div class="alert alert-danger">@pythonStatus.ErrorMessage</div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">No test running or completed</p>
+                        }
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
-    @if (dotnetResult != null || pythonResult != null)
+    <!-- Comparison Card -->
+    @if (dotnetStatus != null && pythonStatus != null && 
+         (dotnetStatus.Status == "Completed" || dotnetStatus.Status == "Stopped") &&
+         (pythonStatus.Status == "Completed" || pythonStatus.Status == "Stopped") &&
+         dotnetStatus.AverageTimePerIterationMs > 0 && pythonStatus.AverageTimePerIterationMs > 0)
     {
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">.NET Results</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (dotnetResult?.Success == true && dotnetResult.Metrics != null)
-                        {
-                            var m = dotnetResult.Metrics;
-                            <table class="table table-sm">
-                                <tbody>
-                                    <tr><th>Language</th><td>@m.Language</td></tr>
-                                    <tr><th>Framework</th><td>@m.Framework</td></tr>
-                                    <tr><th>Model</th><td>@m.Model</td></tr>
-                                    <tr><th>Total Iterations</th><td>@m.TotalIterations</td></tr>
-                                    <tr><th>Total Time</th><td>@m.TotalExecutionTimeMs.ToString("N0") ms</td></tr>
-                                    <tr><th>Average Time</th><td>@m.AverageTimePerIterationMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Min Time</th><td>@m.MinIterationTimeMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Max Time</th><td>@m.MaxIterationTimeMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Memory Used</th><td>@m.MemoryUsedMB.ToString("N2") MB</td></tr>
-                                    <tr><th>Warmup</th><td>@(m.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
-                                </tbody>
-                            </table>
-                        }
-                        else if (dotnetResult != null)
-                        {
-                            <div class="alert alert-danger">@dotnetResult.Message</div>
-                        }
-                        else
-                        {
-                            <p class="text-muted">No results yet</p>
-                        }
-                    </div>
-                </div>
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => comparisonCollapsed = !comparisonCollapsed">
+                <h5 class="mb-0">Comparison Summary</h5>
+                <span class="badge bg-light text-dark">@(comparisonCollapsed ? "▼" : "▲")</span>
             </div>
-
-            <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">Python Results</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (pythonResult?.Success == true && pythonResult.Metrics != null)
-                        {
-                            var m = pythonResult.Metrics;
-                            <table class="table table-sm">
-                                <tbody>
-                                    <tr><th>Language</th><td>@m.Language</td></tr>
-                                    <tr><th>Framework</th><td>@m.Framework</td></tr>
-                                    <tr><th>Model</th><td>@m.Model</td></tr>
-                                    <tr><th>Total Iterations</th><td>@m.TotalIterations</td></tr>
-                                    <tr><th>Total Time</th><td>@m.TotalExecutionTimeMs.ToString("N0") ms</td></tr>
-                                    <tr><th>Average Time</th><td>@m.AverageTimePerIterationMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Min Time</th><td>@m.MinIterationTimeMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Max Time</th><td>@m.MaxIterationTimeMs.ToString("N3") ms</td></tr>
-                                    <tr><th>Memory Used</th><td>@m.MemoryUsedMB.ToString("N2") MB</td></tr>
-                                    <tr><th>Warmup</th><td>@(m.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
-                                </tbody>
-                            </table>
-                        }
-                        else if (pythonResult != null)
-                        {
-                            <div class="alert alert-danger">@pythonResult.Message</div>
-                        }
-                        else
-                        {
-                            <p class="text-muted">No results yet</p>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        @if (dotnetResult?.Success == true && pythonResult?.Success == true)
-        {
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Comparison Summary</h5>
-                </div>
+            @if (!comparisonCollapsed)
+            {
                 <div class="card-body">
                     @{
-                        var dotnetAvg = dotnetResult.Metrics!.AverageTimePerIterationMs;
-                        var pythonAvg = pythonResult.Metrics!.AverageTimePerIterationMs;
+                        var dotnetAvg = dotnetStatus.AverageTimePerIterationMs;
+                        var pythonAvg = pythonStatus.AverageTimePerIterationMs;
                         var faster = dotnetAvg < pythonAvg ? ".NET" : "Python";
                         var diff = Math.Abs(dotnetAvg - pythonAvg);
                         var percentDiff = (diff / Math.Max(dotnetAvg, pythonAvg)) * 100;
@@ -208,31 +233,41 @@
                             <h6>.NET Metrics</h6>
                             <ul>
                                 <li>Avg: @dotnetAvg.ToString("N3") ms</li>
-                                <li>Memory: @dotnetResult.Metrics!.MemoryUsedMB.ToString("N2") MB</li>
+                                <li>Memory: @dotnetStatus.MemoryUsedMB.ToString("N2") MB</li>
+                                <li>Iterations: @dotnetStatus.CurrentIteration</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <h6>Python Metrics</h6>
                             <ul>
                                 <li>Avg: @pythonAvg.ToString("N3") ms</li>
-                                <li>Memory: @pythonResult.Metrics!.MemoryUsedMB.ToString("N2") MB</li>
+                                <li>Memory: @pythonStatus.MemoryUsedMB.ToString("N2") MB</li>
+                                <li>Iterations: @pythonStatus.CurrentIteration</li>
                             </ul>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     }
 </div>
 
 @code {
-    private TestConfiguration config = new();
-    private TestResult? dotnetResult;
-    private TestResult? pythonResult;
+    private TestConfiguration config = new() { Iterations = 10 };
+    private TestStatus? dotnetStatus;
+    private TestStatus? pythonStatus;
     private bool isRunning = false;
     private bool dotnetHealthy = false;
     private bool pythonHealthy = false;
     private string statusMessage = string.Empty;
+    private System.Timers.Timer? _pollTimer;
+
+    // Collapse states
+    private bool configCollapsed = false;
+    private bool statusCollapsed = false;
+    private bool dotnetCollapsed = false;
+    private bool pythonCollapsed = false;
+    private bool comparisonCollapsed = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -246,35 +281,148 @@
         StateHasChanged();
     }
 
-    private async Task RunBothTests()
+    private async Task StartBothTests()
     {
         isRunning = true;
-        dotnetResult = null;
-        pythonResult = null;
-        statusMessage = "Running tests...";
+        statusMessage = "Starting tests...";
+        dotnetStatus = null;
+        pythonStatus = null;
         StateHasChanged();
 
         try
         {
-            // Run both tests concurrently
-            var dotnetTask = ApiService.RunDotNetTestAsync(config);
-            var pythonTask = ApiService.RunPythonTestAsync(config);
+            // Start both tests
+            var dotnetTask = ApiService.StartDotNetTestAsync(config);
+            var pythonTask = ApiService.StartPythonTestAsync(config);
 
             await Task.WhenAll(dotnetTask, pythonTask);
 
-            dotnetResult = await dotnetTask;
-            pythonResult = await pythonTask;
-
-            statusMessage = "Tests completed!";
+            statusMessage = "Tests started. Polling for updates...";
+            
+            // Start polling for status
+            StartPolling();
         }
         catch (Exception ex)
         {
-            statusMessage = $"Error: {ex.Message}";
-        }
-        finally
-        {
+            statusMessage = $"Error starting tests: {ex.Message}";
             isRunning = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task StopBothTests()
+    {
+        statusMessage = "Stopping tests...";
+        StateHasChanged();
+
+        try
+        {
+            var dotnetTask = ApiService.StopDotNetTestAsync();
+            var pythonTask = ApiService.StopPythonTestAsync();
+
+            await Task.WhenAll(dotnetTask, pythonTask);
+
+            statusMessage = "Tests stopped.";
+            StopPolling();
+            isRunning = false;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error stopping tests: {ex.Message}";
+        }
+        
+        StateHasChanged();
+    }
+
+    private void StartPolling()
+    {
+        _pollTimer = new System.Timers.Timer(2000); // Poll every 2 seconds
+        _pollTimer.Elapsed += async (sender, e) => await PollStatus();
+        _pollTimer.AutoReset = true;
+        _pollTimer.Start();
+    }
+
+    private void StopPolling()
+    {
+        _pollTimer?.Stop();
+        _pollTimer?.Dispose();
+        _pollTimer = null;
+    }
+
+    private async Task PollStatus()
+    {
+        try
+        {
+            var dotnetTask = ApiService.GetDotNetStatusAsync();
+            var pythonTask = ApiService.GetPythonStatusAsync();
+
+            await Task.WhenAll(dotnetTask, pythonTask);
+
+            dotnetStatus = await dotnetTask;
+            pythonStatus = await pythonTask;
+
+            // Check if both tests are done
+            var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status == "Failed";
+            var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status == "Failed";
+
+            if (dotnetDone && pythonDone)
+            {
+                StopPolling();
+                isRunning = false;
+                statusMessage = "Tests completed.";
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error polling status: {ex.Message}";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ExportResults()
+    {
+        try
+        {
+            var exportData = new
+            {
+                exportDate = DateTime.UtcNow,
+                configuration = config,
+                dotnetResults = dotnetStatus,
+                pythonResults = pythonStatus
+            };
+
+            var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, json);
+            
+            statusMessage = $"Results exported to {fileName}";
             StateHasChanged();
         }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error exporting results: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Running" => "bg-primary",
+            "Completed" => "bg-success",
+            "Stopped" => "bg-warning",
+            "Failed" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    public void Dispose()
+    {
+        StopPolling();
     }
 }

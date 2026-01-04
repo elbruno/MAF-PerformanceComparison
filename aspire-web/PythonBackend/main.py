@@ -2,8 +2,9 @@ import asyncio
 import os
 import time
 import psutil
+import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Dict
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -29,26 +30,26 @@ class TestConfiguration(BaseModel):
     batch_size: int = 10
     concurrent_requests: int = 5
 
-class TestMetrics(BaseModel):
-    language: str = "Python"
-    framework: str = "Python"
-    provider: str = "Ollama"
-    model: str
-    endpoint: str
-    timestamp: datetime
-    warmup_successful: bool
-    total_iterations: int
-    total_execution_time_ms: float
-    average_time_per_iteration_ms: float
-    min_iteration_time_ms: float
-    max_iteration_time_ms: float
-    memory_used_mb: float
-    machine_info: dict
+class TestSession:
+    def __init__(self, session_id: str, config: TestConfiguration):
+        self.session_id = session_id
+        self.configuration = config
+        self.status = "Running"
+        self.start_time = datetime.now(timezone.utc)
+        self.current_iteration = 0
+        self.total_iterations = config.iterations
+        self.elapsed_time_ms = 0
+        self.iteration_times = []
+        self.warmup_successful = False
+        self.memory_used_mb = 0
+        self.machine_info = {}
+        self.error_message = None
+        self.task = None
+        self.cancel_event = asyncio.Event()
 
-class TestResult(BaseModel):
-    success: bool
-    message: str
-    metrics: Optional[TestMetrics] = None
+# Global state
+current_session: Optional[TestSession] = None
+sessions: Dict[str, TestSession] = {}
 
 @app.get("/")
 async def root():
@@ -58,22 +59,84 @@ async def root():
 async def health():
     return {"status": "healthy", "service": "python-backend"}
 
-@app.post("/api/performance/run")
-async def run_test(config: TestConfiguration) -> TestResult:
+@app.post("/api/performance/start")
+async def start_test(config: TestConfiguration):
+    global current_session
+    
+    # Stop any existing test
+    if current_session and current_session.status == "Running":
+        current_session.cancel_event.set()
+        current_session.status = "Stopped"
+    
+    session_id = str(uuid.uuid4())
+    session = TestSession(session_id, config)
+    sessions[session_id] = session
+    current_session = session
+    
+    # Start background task
+    session.task = asyncio.create_task(execute_test(session))
+    
+    return {"sessionId": session_id, "message": "Test started successfully"}
+
+@app.post("/api/performance/stop")
+async def stop_test():
+    global current_session
+    
+    if current_session and current_session.status == "Running":
+        current_session.cancel_event.set()
+        current_session.status = "Stopped"
+        return {"stopped": True, "message": "Test stopped successfully"}
+    
+    return {"stopped": False, "message": "No test running"}
+
+@app.get("/api/performance/status")
+async def get_status(sessionId: Optional[str] = None):
+    global current_session
+    
+    session = None
+    if sessionId:
+        session = sessions.get(sessionId)
+    elif current_session:
+        session = current_session
+    
+    if not session:
+        return {"status": "Idle", "message": "No test running"}
+    
+    avg_time = sum(session.iteration_times) / len(session.iteration_times) if session.iteration_times else 0
+    min_time = min(session.iteration_times) if session.iteration_times else 0
+    max_time = max(session.iteration_times) if session.iteration_times else 0
+    
+    progress_percentage = (session.current_iteration / session.total_iterations * 100) if session.total_iterations > 0 else 0
+    
+    return {
+        "sessionId": session.session_id,
+        "status": session.status,
+        "currentIteration": session.current_iteration,
+        "totalIterations": session.total_iterations,
+        "elapsedTimeMs": session.elapsed_time_ms,
+        "progressPercentage": progress_percentage,
+        "averageTimePerIterationMs": avg_time,
+        "minIterationTimeMs": min_time,
+        "maxIterationTimeMs": max_time,
+        "memoryUsedMB": session.memory_used_mb,
+        "warmupSuccessful": session.warmup_successful,
+        "errorMessage": session.error_message,
+        "configuration": session.configuration.dict(),
+        "machineInfo": session.machine_info
+    }
+
+async def execute_test(session: TestSession):
     try:
         start_time = time.time()
         process = psutil.Process(os.getpid())
         start_memory = process.memory_info().rss / 1024 / 1024
         
-        iteration_times = []
-        warmup_successful = False
-        
-        # Set environment variables for OllamaChatClient
-        os.environ["OLLAMA_HOST"] = config.endpoint
-        os.environ["OLLAMA_CHAT_MODEL_ID"] = config.model
+        # Set environment variables
+        os.environ["OLLAMA_HOST"] = session.configuration.endpoint
+        os.environ["OLLAMA_CHAT_MODEL_ID"] = session.configuration.model
         
         # Create agent
-        agent = OllamaChatClient(model_id=config.model).create_agent(
+        agent = OllamaChatClient(model_id=session.configuration.model).create_agent(
             name="PerformanceTestAgent",
             instructions="You are a helpful assistant. Provide brief, concise responses.",
         )
@@ -83,51 +146,41 @@ async def run_test(config: TestConfiguration) -> TestResult:
             warmup_start = time.time()
             await agent.run("Hello, this is a warmup call.")
             warmup_end = time.time()
-            warmup_time_ms = (warmup_end - warmup_start) * 1000
-            warmup_successful = True
+            session.warmup_successful = True
         except Exception as ex:
             print(f"Warmup failed: {ex}")
         
         # Run iterations
-        for i in range(config.iterations):
+        for i in range(session.configuration.iterations):
+            if session.cancel_event.is_set():
+                break
+            
             iteration_start = time.time()
             try:
                 await agent.run(f"Say hello {i + 1}")
             except Exception as ex:
                 print(f"Iteration {i + 1} failed: {ex}")
             iteration_end = time.time()
-            iteration_times.append((iteration_end - iteration_start) * 1000)
+            
+            session.iteration_times.append((iteration_end - iteration_start) * 1000)
+            session.current_iteration = i + 1
+            session.elapsed_time_ms = (time.time() - start_time) * 1000
         
         end_time = time.time()
         end_memory = process.memory_info().rss / 1024 / 1024
-        total_execution_time = (end_time - start_time) * 1000
-        memory_used = end_memory - start_memory
+        session.elapsed_time_ms = (end_time - start_time) * 1000
+        session.memory_used_mb = end_memory - start_memory
+        session.machine_info = get_machine_info()
         
-        metrics = TestMetrics(
-            model=config.model,
-            endpoint=config.endpoint,
-            timestamp=datetime.now(timezone.utc),
-            warmup_successful=warmup_successful,
-            total_iterations=len(iteration_times),
-            total_execution_time_ms=total_execution_time,
-            average_time_per_iteration_ms=sum(iteration_times) / len(iteration_times),
-            min_iteration_time_ms=min(iteration_times),
-            max_iteration_time_ms=max(iteration_times),
-            memory_used_mb=memory_used,
-            machine_info=get_machine_info()
-        )
-        
-        return TestResult(
-            success=True,
-            message="Test completed successfully",
-            metrics=metrics
-        )
+        if session.cancel_event.is_set():
+            session.status = "Stopped"
+        else:
+            session.status = "Completed"
         
     except Exception as ex:
-        return TestResult(
-            success=False,
-            message=f"Test failed: {str(ex)}"
-        )
+        session.status = "Failed"
+        session.error_message = str(ex)
+        print(f"Test failed: {ex}")
 
 def get_machine_info() -> dict:
     import platform
