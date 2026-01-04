@@ -60,6 +60,7 @@
 ### 1. Running Tests (No Git Needed)
 
 **Standard workflow:**
+
 ```powershell
 # Windows PowerShell
 .\run_tests.ps1 -Iterations 1000 -TestMode standard -AgentType Ollama
@@ -72,6 +73,7 @@ run_tests.bat
 ```
 
 **Environment Variables** (set before running agents directly):
+
 - `ITERATIONS` - Number of test repetitions (default: 1000)
 - `TEST_MODE` - `standard`, `batch`, `concurrent`, `streaming`, `scenarios`
 - `BATCH_SIZE` - Items per batch when TEST_MODE=batch (default: 10)
@@ -80,6 +82,7 @@ run_tests.bat
 - `OLLAMA_MODEL_NAME` / `OLLAMA_CHAT_MODEL_ID` - Model name (default: ministral-3)
 
 **Key Behavior:**
+
 - Scripts auto-clean old metrics before each run
 - Tests generate `metrics_*.json` in agent directories
 - `process_results_ollama.py` auto-runs if tests pass
@@ -88,10 +91,12 @@ run_tests.bat
 ### 2. Building .NET Agents
 
 **Requirements:**
+
 - .NET 10.0 SDK or later
 - NuGet packages: Microsoft.Agents.AI, OllamaSharp, System.Management
 
 **Build & Run:**
+
 ```powershell
 cd dotnet/OllamaAgent
 dotnet build
@@ -99,6 +104,7 @@ $env:ITERATIONS=100; dotnet run
 ```
 
 **Key Dependencies in `.csproj`:**
+
 - `Microsoft.Agents.AI` - Core framework
 - `OllamaSharp` - Ollama client
 - `System.Management` - WMI queries for machine info (Windows)
@@ -106,10 +112,12 @@ $env:ITERATIONS=100; dotnet run
 ### 3. Running Python Agents
 
 **Requirements:**
+
 - Python 3.10+
 - Packages: `agent-framework-ollama`, `psutil`, `python-dotenv`
 
 **Run:**
+
 ```bash
 cd python/ollama_agent
 pip install -r requirements.txt
@@ -118,6 +126,7 @@ python main.py
 ```
 
 **Environment file:** Create `.env` with:
+
 ```
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_CHAT_MODEL_ID=ministral-3
@@ -128,11 +137,13 @@ OLLAMA_CHAT_MODEL_ID=ministral-3
 **Automatic:** `run_tests.ps1` auto-invokes this.
 
 **Manual:**
+
 ```bash
 python process_results_ollama.py
 ```
 
 **Output:**
+
 - Moves metrics to `tests_results/` timestamped folder
 - Creates `comparison_report.md` (formatted metrics + LLM prompt)
 - Creates `analysis_report.md` (AI-generated analysis using test model)
@@ -183,6 +194,7 @@ Every test exports metrics in this format:
 5. **Export metrics** → JSON with timestamp
 
 **Example (.NET):**
+
 ```csharp
 var model = Environment.GetEnvironmentVariable("OLLAMA_MODEL_NAME") ?? "ministral-3";
 var agent = new OllamaApiClient(endpoint, model).CreateAIAgent(...);
@@ -190,6 +202,7 @@ var agent = new OllamaApiClient(endpoint, model).CreateAIAgent(...);
 ```
 
 **Example (Python):**
+
 ```python
 model = os.getenv("OLLAMA_CHAT_MODEL_ID", "llama3.2")
 agent = OllamaChatClient(model_id=model).create_agent(...)
@@ -200,9 +213,16 @@ agent = OllamaChatClient(model_id=model).create_agent(...)
 
 - `dotnet/[Agent]` - Agent implementations (.NET)
 - `python/[agent]` - Agent implementations (Python)
-- `docs/` - Guides, templates, documentation
-- `tests_results/` - Organized test output (created by processor)
-- `run_tests.*` - Multi-platform test orchestration
+- `docs/` - **All guides, templates, and documentation** (centralized location)
+  - `docs/MACHINE_INFO_GUIDE.md` - Machine information interpretation
+  - `docs/comparison_prompt_template.md` - LLM analysis structure
+  - `docs/IMPLEMENTATION_SUMMARY.md` - Architecture deep-dive
+  - `docs/VERIFICATION_CHECKLIST.md` - Implementation status
+  - `docs/DETAILED_GUIDE.md` - Comprehensive documentation
+  - `docs/SCRIPTS_README.md` - Test automation details
+  - `docs/MACHINE_INFO_CHANGELOG.md` - Machine info implementation details
+- `tests_results/` - Organized test output (created by processor, auto-managed)
+- `run_tests.*` - Multi-platform test orchestration (root level only)
 
 ### Naming Conventions
 
@@ -216,6 +236,7 @@ agent = OllamaChatClient(model_id=model).create_agent(...)
 ### External Services
 
 - **Ollama API** - Default AI provider
+
   - Endpoint: `http://localhost:11434` (configurable)
   - Requires local Ollama installation
   - Models via `ollama pull <model>`
@@ -227,11 +248,13 @@ agent = OllamaChatClient(model_id=model).create_agent(...)
 ### Key Libraries
 
 **Python:**
+
 - `agent-framework-ollama` - Microsoft Agent Framework (Ollama backend)
 - `psutil` - System metrics (CPU, memory, GPU detection)
 - `python-dotenv` - Environment variable loading
 
 **.NET:**
+
 - `Microsoft.Agents.AI` - Core framework
 - `OllamaSharp` - Ollama HTTP client
 - `System.Management` - WMI for Windows system info (optional, graceful fallback)
@@ -271,11 +294,20 @@ agent = OllamaChatClient(model_id=model).create_agent(...)
 
 ## Documentation References
 
-- [README.md](README.md) - Quick start
-- [docs/MACHINE_INFO_GUIDE.md](docs/MACHINE_INFO_GUIDE.md) - Metrics interpretation
-- [docs/comparison_prompt_template.md](docs/comparison_prompt_template.md) - LLM analysis structure
-- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Architecture deep-dive
-- [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md) - Implementation status
+**All documentation is located in the `docs/` folder:**
+
+- [docs/MACHINE_INFO_GUIDE.md](docs/MACHINE_INFO_GUIDE.md) - Metrics interpretation and machine information
+- [docs/comparison_prompt_template.md](docs/comparison_prompt_template.md) - LLM analysis structure and prompts
+- [docs/IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md) - Architecture deep-dive and feature details
+- [docs/VERIFICATION_CHECKLIST.md](docs/VERIFICATION_CHECKLIST.md) - Implementation verification status
+- [docs/DETAILED_GUIDE.md](docs/DETAILED_GUIDE.md) - Comprehensive configuration and advanced usage
+- [docs/SCRIPTS_README.md](docs/SCRIPTS_README.md) - Test automation and script details
+- [docs/MACHINE_INFO_CHANGELOG.md](docs/MACHINE_INFO_CHANGELOG.md) - Machine info collection implementation
+
+**Root-level reference files:**
+
+- [README.md](README.md) - Quick start guide
+- [.github/copilot-instructions.md](.github/copilot-instructions.md) - This file (AI agent guidance)
 
 ## Quick Diagnostic Commands
 
