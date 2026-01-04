@@ -23,9 +23,9 @@ public class PerformanceController : ControllerBase
     public IActionResult StartTest([FromBody] TestConfiguration config)
     {
         _logger.LogInformation("Starting test with {Iterations} iterations", config.Iterations);
-        
+
         var sessionId = _backgroundTestService.StartTest(config);
-        
+
         return Ok(new { sessionId, message = "Test started successfully" });
     }
 
@@ -33,9 +33,9 @@ public class PerformanceController : ControllerBase
     public IActionResult StopTest()
     {
         _logger.LogInformation("Stopping test");
-        
+
         var stopped = _backgroundTestService.StopTest();
-        
+
         return Ok(new { stopped, message = stopped ? "Test stopped successfully" : "No test running" });
     }
 
@@ -43,7 +43,7 @@ public class PerformanceController : ControllerBase
     public IActionResult GetStatus([FromQuery] string? sessionId = null)
     {
         var session = _backgroundTestService.GetStatus(sessionId);
-        
+
         if (session == null)
         {
             return Ok(new { status = "Idle", message = "No test running" });
@@ -64,8 +64,14 @@ public class PerformanceController : ControllerBase
             averageTimePerIterationMs = avgTime,
             minIterationTimeMs = minTime,
             maxIterationTimeMs = maxTime,
+            lastIterationTimeMs = session.LastIterationTimeMs,
+            iterationsPerSecond = session.IterationsPerSecond,
+            estimatedTimeRemainingMs = session.EstimatedTimeRemainingMs,
+            successCount = session.SuccessCount,
+            failureCount = session.FailureCount,
             memoryUsedMB = session.MemoryUsedMB,
             warmupSuccessful = session.WarmupSuccessful,
+            warmupTimeMs = session.WarmupTimeMs,
             errorMessage = session.ErrorMessage,
             configuration = session.Configuration,
             machineInfo = session.MachineInfo

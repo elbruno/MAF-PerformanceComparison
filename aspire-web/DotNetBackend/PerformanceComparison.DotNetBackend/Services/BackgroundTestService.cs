@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Linq;
 using System.Management;
 using System.Collections.Concurrent;
 using Microsoft.Agents.AI;
@@ -31,7 +32,7 @@ public class BackgroundTestService
 
             var sessionId = Guid.NewGuid().ToString();
             _currentCts = new CancellationTokenSource();
-            
+
             var session = new TestSession
             {
                 SessionId = sessionId,
@@ -59,13 +60,13 @@ public class BackgroundTestService
             {
                 _currentCts.Cancel();
                 _currentCts = null;
-                
+
                 // Update session status
                 foreach (var session in _sessions.Values.Where(s => s.Status == "Running"))
                 {
                     session.Status = "Stopped";
                 }
-                
+
                 return true;
             }
             return false;
@@ -79,7 +80,7 @@ public class BackgroundTestService
             // Return the most recent session
             return _sessions.Values.OrderByDescending(s => s.StartTime).FirstOrDefault();
         }
-        
+
         _sessions.TryGetValue(sessionId, out var session);
         return session;
     }
@@ -92,6 +93,18 @@ public class BackgroundTestService
             var startMemory = GC.GetTotalMemory(true);
 
             _logger.LogInformation("Starting background test with {Iterations} iterations", session.Configuration.Iterations);
+
+            // Reset session metrics explicitly when a test starts
+            session.CurrentIteration = 0;
+            session.IterationTimes = new List<double>();
+            session.ElapsedTimeMs = 0;
+            session.WarmupSuccessful = false;
+            session.WarmupTimeMs = 0;
+            session.LastIterationTimeMs = 0;
+            session.SuccessCount = 0;
+            session.FailureCount = 0;
+            session.IterationsPerSecond = 0;
+            session.EstimatedTimeRemainingMs = 0;
 
             // Create agent
             var agent = new OllamaApiClient(new Uri(session.Configuration.Endpoint), session.Configuration.Model)
@@ -107,6 +120,7 @@ public class BackgroundTestService
                 var warmupEnd = Stopwatch.GetTimestamp();
                 var warmupTimeMs = (warmupEnd - warmupStart) * 1000.0 / Stopwatch.Frequency;
                 session.WarmupSuccessful = true;
+                session.WarmupTimeMs = warmupTimeMs;
                 _logger.LogInformation("Warmup completed in {Time:F3} ms", warmupTimeMs);
             }
             catch (Exception ex)
@@ -118,22 +132,33 @@ public class BackgroundTestService
             for (int i = 0; i < session.Configuration.Iterations && !cancellationToken.IsCancellationRequested; i++)
             {
                 var iterationStart = Stopwatch.GetTimestamp();
-
+                bool success = false;
                 try
                 {
                     await agent.RunAsync($"Say hello {i + 1}");
+                    success = true;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Iteration {Iteration} failed", i + 1);
+                    success = false;
                 }
 
                 var iterationEnd = Stopwatch.GetTimestamp();
                 var iterationTimeMs = (iterationEnd - iterationStart) * 1000.0 / Stopwatch.Frequency;
-                
+
                 session.IterationTimes.Add(iterationTimeMs);
                 session.CurrentIteration = i + 1;
+                session.LastIterationTimeMs = iterationTimeMs;
                 session.ElapsedTimeMs = stopwatch.ElapsedMilliseconds;
+                if (success) session.SuccessCount++; else session.FailureCount++;
+
+                // Compute iterations per second as a rolling metric
+                var totalSec = Math.Max(1, stopwatch.ElapsedMilliseconds) / 1000.0;
+                session.IterationsPerSecond = session.CurrentIteration / totalSec;
+                // Estimate remaining time (ms)
+                var avg = session.IterationTimes.Any() ? session.IterationTimes.Average() : 0;
+                session.EstimatedTimeRemainingMs = (session.Configuration.Iterations - session.CurrentIteration) * avg;
             }
 
             stopwatch.Stop();
@@ -200,6 +225,13 @@ public class TestSession
     public long ElapsedTimeMs { get; set; }
     public List<double> IterationTimes { get; set; } = new();
     public bool WarmupSuccessful { get; set; }
+    // New status metrics
+    public double WarmupTimeMs { get; set; }
+    public double LastIterationTimeMs { get; set; }
+    public int SuccessCount { get; set; }
+    public int FailureCount { get; set; }
+    public double IterationsPerSecond { get; set; }
+    public double EstimatedTimeRemainingMs { get; set; }
     public double MemoryUsedMB { get; set; }
     public Dictionary<string, object>? MachineInfo { get; set; }
     public string? ErrorMessage { get; set; }

@@ -41,6 +41,13 @@ class TestSession:
         self.elapsed_time_ms = 0
         self.iteration_times = []
         self.warmup_successful = False
+        # Additional status metrics for frontend
+        self.warmup_time_ms = 0
+        self.last_iteration_time_ms = 0
+        self.success_count = 0
+        self.failure_count = 0
+        self.iterations_per_second = 0
+        self.estimated_time_remaining_ms = 0
         self.memory_used_mb = 0
         self.machine_info = {}
         self.error_message = None
@@ -73,6 +80,18 @@ async def start_test(config: TestConfiguration):
     sessions[session_id] = session
     current_session = session
     
+    # Reset status values explicitly
+    session.current_iteration = 0
+    session.iteration_times = []
+    session.elapsed_time_ms = 0
+    session.warmup_successful = False
+    session.warmup_time_ms = 0
+    session.last_iteration_time_ms = 0
+    session.success_count = 0
+    session.failure_count = 0
+    session.iterations_per_second = 0
+    session.estimated_time_remaining_ms = 0
+
     # Start background task
     session.task = asyncio.create_task(execute_test(session))
     
@@ -119,8 +138,14 @@ async def get_status(sessionId: Optional[str] = None):
         "averageTimePerIterationMs": avg_time,
         "minIterationTimeMs": min_time,
         "maxIterationTimeMs": max_time,
+        "lastIterationTimeMs": session.last_iteration_time_ms,
+        "iterationsPerSecond": session.iterations_per_second,
+        "estimatedTimeRemainingMs": session.estimated_time_remaining_ms,
+        "successCount": session.success_count,
+        "failureCount": session.failure_count,
         "memoryUsedMB": session.memory_used_mb,
         "warmupSuccessful": session.warmup_successful,
+        "warmupTimeMs": session.warmup_time_ms,
         "errorMessage": session.error_message,
         "configuration": session.configuration.dict(),
         "machineInfo": session.machine_info
@@ -148,6 +173,7 @@ async def execute_test(session: TestSession):
             await agent.run("Hello, this is a warmup call.")
             warmup_end = time.time()
             session.warmup_successful = True
+            session.warmup_time_ms = (warmup_end - warmup_start) * 1000
         except Exception as ex:
             print(f"Warmup failed: {ex}")
         
@@ -157,15 +183,30 @@ async def execute_test(session: TestSession):
                 break
             
             iteration_start = time.time()
+            success = False
             try:
                 await agent.run(f"Say hello {i + 1}")
+                success = True
             except Exception as ex:
                 print(f"Iteration {i + 1} failed: {ex}")
+                success = False
             iteration_end = time.time()
-            
-            session.iteration_times.append((iteration_end - iteration_start) * 1000)
+
+            last_ms = (iteration_end - iteration_start) * 1000
+            session.iteration_times.append(last_ms)
             session.current_iteration = i + 1
+            session.last_iteration_time_ms = last_ms
             session.elapsed_time_ms = (time.time() - start_time) * 1000
+            if success:
+                session.success_count += 1
+            else:
+                session.failure_count += 1
+
+            # Rolling iterations per second metric
+            total_sec = max(1, session.elapsed_time_ms) / 1000.0
+            session.iterations_per_second = session.current_iteration / total_sec
+            avg = sum(session.iteration_times) / len(session.iteration_times) if session.iteration_times else 0
+            session.estimated_time_remaining_ms = (session.configuration.iterations - session.current_iteration) * avg
         
         end_time = time.time()
         end_memory = process.memory_info().rss / 1024 / 1024

@@ -123,7 +123,7 @@
                                     </tr>
                                     <tr>
                                         <th>Elapsed Time</th>
-                                        <td>@(dotnetStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td>
+                                        <td>@((dotnetStatus.ElapsedTimeMs / 1000.0).ToString("F2")) s</td>
                                     </tr>
                                     @if (dotnetStatus.AverageTimePerIterationMs > 0)
                                     {
@@ -200,7 +200,7 @@
                                     </tr>
                                     <tr>
                                         <th>Elapsed Time</th>
-                                        <td>@(pythonStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td>
+                                        <td>@((pythonStatus.ElapsedTimeMs / 1000.0).ToString("F2")) s</td>
                                     </tr>
                                     @if (pythonStatus.AverageTimePerIterationMs > 0)
                                     {
@@ -465,9 +465,9 @@
 
             // Check if both tests are done
             var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status ==
-            "Failed";
+                        "Failed";
             var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status ==
-            "Failed";
+                        "Failed";
 
             if (dotnetDone && pythonDone)
             {
