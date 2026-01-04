@@ -18,12 +18,6 @@ builder.Services.AddCors(options =>
 // Add performance test service
 builder.Services.AddSingleton<PerformanceTestService>();
 
-// Add OpenTelemetry
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation());
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline

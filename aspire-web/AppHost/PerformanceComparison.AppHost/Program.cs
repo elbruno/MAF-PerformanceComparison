@@ -1,20 +1,13 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Add Python backend for running Python agent tests
-var pythonBackend = builder.AddPythonProject("python-backend", 
-    "../../../python/ollama_agent", 
-    "main.py")
-    .WithHttpEndpoint(port: 5001, name: "http")
-    .WithEnvironment("PYTHONUNBUFFERED", "1");
-
 // Add .NET backend for running .NET agent tests
-var dotnetBackend = builder.AddProject<Projects.PerformanceComparison_DotNetBackend>("dotnet-backend")
+var dotnetBackend = builder.AddProject("dotnet-backend", "../../DotNetBackend/PerformanceComparison.DotNetBackend/PerformanceComparison.DotNetBackend.csproj")
     .WithHttpEndpoint(port: 5002, name: "http");
 
 // Add Blazor frontend web app
-var web = builder.AddProject<Projects.PerformanceComparison_Web>("web")
+var web = builder.AddProject("web", "../../Web/PerformanceComparison.Web/PerformanceComparison.Web.csproj")
     .WithExternalHttpEndpoints()
-    .WithReference(pythonBackend)
-    .WithReference(dotnetBackend);
+    .WithEnvironment("DotNetBackend", "http://localhost:5002")
+    .WithEnvironment("PythonBackend", "http://localhost:5001");
 
 builder.Build().Run();
