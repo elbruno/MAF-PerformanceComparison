@@ -1,3 +1,4 @@
+````markdown
 # Machine Information Enhancement - Implementation Complete
 
 ## Overview
@@ -175,9 +176,9 @@ Language Runtime
 
 ## Documentation
 
-- 📖 **[MACHINE_INFO_GUIDE.md](docs/MACHINE_INFO_GUIDE.md)** - How to interpret machine information
-- 📋 **[MACHINE_INFO_CHANGELOG.md](docs/MACHINE_INFO_CHANGELOG.md)** - What changed and why
-- 📝 **[comparison_prompt_template.md](docs/comparison_prompt_template.md)** - Updated comparison guidelines
+- 📖 **[MACHINE_INFO_GUIDE.md](MACHINE_INFO_GUIDE.md)** - How to interpret machine information
+- 📋 **[MACHINE_INFO_CHANGELOG.md](MACHINE_INFO_CHANGELOG.md)** - What changed and why
+- 📝 **[comparison_prompt_template.md](comparison_prompt_template.md)** - Updated comparison guidelines
 
 ## Backward Compatibility
 
@@ -214,15 +215,15 @@ Language Runtime
 1. ✅ Run updated test suite
 2. ✅ Review new `MachineInfo` in metrics files
 3. ✅ Check comparison reports include hardware specs
-4. ✅ Read [MACHINE_INFO_GUIDE.md](docs/MACHINE_INFO_GUIDE.md) for interpretation
+4. ✅ Read [MACHINE_INFO_GUIDE.md](MACHINE_INFO_GUIDE.md) for interpretation
 5. ✅ Use hardware context for better analysis
 
 ## Support
 
 For issues or questions about machine information:
 
-1. Check [MACHINE_INFO_GUIDE.md](docs/MACHINE_INFO_GUIDE.md)
-2. Review [MACHINE_INFO_CHANGELOG.md](docs/MACHINE_INFO_CHANGELOG.md)
+1. Check [MACHINE_INFO_GUIDE.md](MACHINE_INFO_GUIDE.md)
+2. Review [MACHINE_INFO_CHANGELOG.md](MACHINE_INFO_CHANGELOG.md)
 3. Check specific OS detection in agent code
 4. Verify driver/tool availability for GPU detection
 
@@ -232,3 +233,5 @@ For issues or questions about machine information:
 **Compatibility**: All platforms (Windows, Linux, macOS)
 **Breaking Changes**: None
 **Impact**: Minimal (negligible collection overhead)
+
+````
