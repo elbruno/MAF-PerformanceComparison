@@ -417,8 +417,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# Performance metrics output files
-metrics_*.json
-
-# Test results folders (keep sample folder)
-tests_results/[0-9]*
+# Performance metrics output files (excluding test results folder)
+# metrics_*.json files in agent directories are moved to tests_results/
+# and should be committed there for analysis tracking

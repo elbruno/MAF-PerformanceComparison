@@ -1,0 +1,29 @@
+{
+  "TestInfo": {
+    "Language": "CSharp",
+    "Framework": "DotNet",
+    "Provider": "Ollama",
+    "Model": "ministral-3",
+    "Endpoint": "http://localhost:11434",
+    "Timestamp": "2026-01-04T01:20:42.8623453\u002B00:00",
+    "WarmupSuccessful": true
+  },
+  "MachineInfo": {
+    "OSDescription": "Microsoft Windows 10.0.26220",
+    "ProcessorCount": 32,
+    "Architecture": "X64",
+    "DotNetVersion": ".NET 10.0.1",
+    "TotalMemoryGB": 31.71,
+    "CPUModel": "Intel(R) Core(TM) i9-14900KF",
+    "CPUMaxSpeedGHz": 3.2,
+    "AvailableMemoryGB": 0.01
+  },
+  "Metrics": {
+    "TotalIterations": 5000,
+    "TotalExecutionTimeMs": 1061598,
+    "AverageTimePerIterationMs": 212.20470507999957,
+    "MinIterationTimeMs": 125.3795,
+    "MaxIterationTimeMs": 994.9884,
+    "MemoryUsedMB": 5.2078399658203125
+  }
+}

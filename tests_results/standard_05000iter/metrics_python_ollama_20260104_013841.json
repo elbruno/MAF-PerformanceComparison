@@ -1,0 +1,36 @@
+{
+  "TestInfo": {
+    "Language": "Python",
+    "Framework": "Python",
+    "Provider": "Ollama",
+    "Model": "ministral-3",
+    "Endpoint": "http://localhost:11434",
+    "Timestamp": "2026-01-04T01:38:41.188757+00:00",
+    "WarmupSuccessful": true
+  },
+  "MachineInfo": {
+    "OSSystem": "Windows",
+    "OSRelease": "11",
+    "OSVersion": "10.0.26220",
+    "Architecture": "AMD64",
+    "ProcessorCount": 24,
+    "LogicalProcessorCount": 32,
+    "CPUMaxFreqGHz": 3.2,
+    "CPUCurrentFreqGHz": 3.2,
+    "TotalMemoryGB": 31.71,
+    "AvailableMemoryGB": 13.45,
+    "MemoryPercentUsed": 57.6,
+    "TotalSwapGB": 22.0,
+    "GPUModel": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "GPUMemoryMB": "16376 MiB",
+    "PythonVersion": "3.14.2"
+  },
+  "Metrics": {
+    "TotalIterations": 5000,
+    "TotalExecutionTimeMs": 1077133.2535743713,
+    "AverageTimePerIterationMs": 215.25543818473815,
+    "MinIterationTimeMs": 128.47447395324707,
+    "MaxIterationTimeMs": 832.4031829833984,
+    "MemoryUsedMB": 19.71875
+  }
+}
