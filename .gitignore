@@ -420,3 +420,6 @@ FodyWeavers.xsd
 # Performance metrics output files (excluding test results folder)
 # metrics_*.json files in agent directories are moved to tests_results/
 # and should be committed there for analysis tracking
+dotnet/**/metrics_*.json
+python/**/metrics_*.json
+!tests_results/**/metrics_*.json
