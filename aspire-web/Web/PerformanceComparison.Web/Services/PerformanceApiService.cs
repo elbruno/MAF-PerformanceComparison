@@ -14,8 +14,8 @@ public class PerformanceApiService
         IHttpClientFactory httpClientFactory,
         ILogger<PerformanceApiService> logger)
     {
-        _dotnetClient = httpClientFactory.CreateClient("dotnet-backend");
-        _pythonClient = httpClientFactory.CreateClient("python-backend");
+        _dotnetClient = httpClientFactory.CreateClient("dotnetBackend");
+        _pythonClient = httpClientFactory.CreateClient("pythonBackend");
         _logger = logger;
     }
 

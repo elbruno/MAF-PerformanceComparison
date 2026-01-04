@@ -11,20 +11,29 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add HTTP clients for backend services
-builder.Services.AddHttpClient("dotnet-backend", client =>
-{
-    var dotnetBackendUrl = builder.Configuration["services:dotnet-backend:http:0"] 
-        ?? builder.Configuration["DotNetBackend"] 
-        ?? "http://localhost:5002";
-    client.BaseAddress = new Uri(dotnetBackendUrl);
-});
+//builder.Services.AddHttpClient("dotnet-backend", client =>
+//{
+//    var dotnetBackendUrl = builder.Configuration["services:dotnet-backend:http:0"] 
+//        ?? builder.Configuration["DotNetBackend"] 
+//        ?? "http://localhost:5002";
+//    client.BaseAddress = new Uri(dotnetBackendUrl);
+//});
 
-builder.Services.AddHttpClient("python-backend", client =>
+//builder.Services.AddHttpClient("python-backend", client =>
+//{
+//    var pythonBackendUrl = builder.Configuration["services:python-backend:http:0"]
+//        ?? builder.Configuration["PythonBackend"]
+//        ?? "http://localhost:5001";
+//    client.BaseAddress = new Uri(pythonBackendUrl);
+//});
+
+builder.Services.AddHttpClient("dotnetBackend", client =>
 {
-    var pythonBackendUrl = builder.Configuration["services:python-backend:http:0"] 
-        ?? builder.Configuration["PythonBackend"] 
-        ?? "http://localhost:5001";
-    client.BaseAddress = new Uri(pythonBackendUrl);
+    client.BaseAddress = new("https+http://dotnetBackend");
+});
+builder.Services.AddHttpClient("pythonBackend", client =>
+{
+    client.BaseAddress = new("https+http://pythonBackend");
 });
 
 builder.Services.AddScoped<PerformanceApiService>();
