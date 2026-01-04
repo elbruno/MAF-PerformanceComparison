@@ -2,25 +2,51 @@
 
 This is a real-time performance comparison web application built with .NET Aspire that orchestrates multiple services to run and visualize Microsoft Agent Framework performance tests.
 
+## ✨ Latest Updates (v2.0)
+
+**Background Test Execution with Real-time Polling:**
+- Tests now run in background processes for non-blocking operation
+- Auto-polling every 2 seconds for real-time status updates
+- Collapsible UI sections for cleaner interface
+- Export results as JSON files
+- Stop running tests at any time
+- See [CHANGELOG.md](CHANGELOG.md) for full details
+
 ## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────┐
+│  User Browser (Blazor Frontend)                      │
+│  - Polls status every 2 seconds                      │
+│  - Displays real-time progress                       │
+└────────┬─────────────────────────────────────────────┘
+         │ HTTP Polling
+         ▼
+┌──────────────────────────────────────────────────────┐
 │  Aspire AppHost (Orchestrator)                       │
-│  - Service discovery                                 │
-│  - Health monitoring                                 │
-│  - Telemetry collection                              │
+│  - Service discovery & health monitoring             │
 └────────┬─────────────────────────────────────────────┘
          │
     ┌────┴──────────────────────┐
     │                           │
     ▼                           ▼
 ┌─────────────┐         ┌───────────────────┐
-│ Blazor Web  │         │ API Backends      │
-│ Frontend    │◄────────┤ - .NET Backend    │
-│             │  HTTP   │ - Python Backend  │
+│ .NET Backend│         │ Python Backend    │
+│ Background  │         │ Background        │
+│ Test Process│         │ Test Process      │
 └─────────────┘         └───────────────────┘
 ```
+
+## Key Features
+
+- **Real-time Updates**: Status polls every 2 seconds during test execution
+- **Background Execution**: Tests run in separate processes, non-blocking
+- **Start/Stop Control**: Start tests and stop them at any time
+- **Collapsible UI**: Click any card header to collapse/expand
+- **Export Results**: Download complete test results as JSON
+- **Progress Tracking**: Visual progress bars and percentage indicators
+- **Live Metrics**: See current iteration, elapsed time, and performance metrics
+- **Clean Interface**: Focused dashboard with no unnecessary pages
 
 ## Components
 
@@ -35,11 +61,15 @@ This is a real-time performance comparison web application built with .NET Aspir
 
 ### 2. Blazor Web Frontend
 - **Project**: `PerformanceComparison.Web`
-- **Purpose**: Interactive web UI for running tests and viewing results
+- **Route**: `/dashboard` (auto-redirects from `/`)
+- **Purpose**: Interactive web UI for running tests and viewing real-time results
 - **Features**:
-  - Configure test parameters (iterations, model, endpoint, etc.)
-  - Run tests on both .NET and Python backends simultaneously
-  - Real-time progress updates
+  - Configure test parameters (iterations, model, endpoint)
+  - Start/stop tests on both .NET and Python backends simultaneously
+  - **Real-time status polling** (every 2 seconds)
+  - Progress bars showing test completion
+  - **Collapsible sections** for cleaner interface
+  - **Export results** to JSON file
   - Side-by-side comparison of results
   - Service health monitoring
 
@@ -48,22 +78,28 @@ This is a real-time performance comparison web application built with .NET Aspir
 - **Port**: 5002
 - **Purpose**: Execute performance tests using .NET Agent Framework
 - **Endpoints**:
-  - `POST /api/performance/run` - Run performance test
+  - `POST /api/performance/start` - Start test in background
+  - `POST /api/performance/stop` - Stop running test
+  - `GET /api/performance/status` - Get real-time test status
   - `GET /api/performance/health` - Health check
 - **Features**:
+  - **Background test execution** with cancellation support
   - Runs agent tests with Microsoft.Agents.AI
   - Collects detailed performance metrics
   - Machine information gathering
-  - Progress reporting
+  - Session-based tracking
 
 ### 4. Python Backend API
 - **Project**: `PythonBackend` (FastAPI)
 - **Port**: 5001
 - **Purpose**: Execute performance tests using Python Agent Framework
 - **Endpoints**:
-  - `POST /api/performance/run` - Run performance test
+  - `POST /api/performance/start` - Start test in background
+  - `POST /api/performance/stop` - Stop running test
+  - `GET /api/performance/status` - Get real-time test status
   - `GET /api/performance/health` - Health check
 - **Features**:
+  - **Background test execution** with async tasks
   - Runs agent tests with agent-framework-ollama
   - Collects detailed performance metrics
   - Machine information gathering
@@ -119,7 +155,64 @@ dotnet run
 
 - **Web Frontend**: Navigate to the URL shown in the terminal (usually `https://localhost:5xxx`)
 - **Aspire Dashboard**: Opens automatically when running AppHost
-- **Performance Dashboard**: Click "Performance Comparison" in the navigation menu
+- **Performance Dashboard**: Automatically loads at `/dashboard` (or click "Performance Dashboard" in menu)
+
+## How to Use
+
+### Running a Performance Test
+
+1. **Configure Parameters**:
+   - Set number of iterations (1-10,000)
+   - Choose model name (e.g., `ministral-3`)
+   - Set Ollama endpoint URL
+   
+2. **Start Tests**:
+   - Click the green "Start Tests" button
+   - Both .NET and Python tests start simultaneously in background
+   - Status automatically updates every 2 seconds
+
+3. **Monitor Progress**:
+   - Watch real-time progress bars
+   - See current iteration count
+   - View elapsed time
+   - Monitor live metrics (avg/min/max times)
+
+4. **Stop Tests** (Optional):
+   - Click red "Stop Tests" button anytime to cancel
+   - Tests gracefully stop and show partial results
+
+5. **View Results**:
+   - When completed, see metrics for both implementations
+   - Comparison summary shows which is faster
+   - All cards are collapsible (click header to toggle)
+
+6. **Export Results**:
+   - Click "Export Results" button
+   - Downloads JSON file with complete test data
+   - Includes configuration, metrics, and machine info
+
+### UI Features
+
+**Collapsible Cards**: Click any card header to collapse/expand:
+- Test Configuration
+- Service Status
+- .NET Results
+- Python Results
+- Comparison Summary
+
+**Real-time Updates**: During test execution you see:
+- Progress percentage and visual progress bar
+- Current iteration / Total iterations
+- Elapsed time in seconds
+- Running average time per iteration
+- Min/max iteration times
+- Memory usage
+
+**Action Buttons**:
+- 🟢 **Start Tests**: Begin performance tests
+- 🔴 **Stop Tests**: Cancel running tests
+- 🔵 **Export Results**: Download JSON results
+- 🔄 **Refresh Status**: Update service health
 
 ## Configuration
 
@@ -127,17 +220,9 @@ dotnet run
 
 The web interface allows you to configure:
 
-- **Iterations**: Number of test iterations (default: 10, max: 1000)
+- **Iterations**: Number of test iterations (default: 10, max: 10000)
 - **Model**: Ollama model name (default: `ministral-3`)
 - **Endpoint**: Ollama API endpoint (default: `http://localhost:11434`)
-- **Test Mode**: 
-  - `standard` - Sequential execution
-  - `batch` - Batch processing
-  - `concurrent` - Parallel requests
-  - `streaming` - Streaming responses
-  - `scenarios` - Multiple prompt types
-- **Batch Size**: For batch mode (default: 10)
-- **Concurrent Requests**: For concurrent mode (default: 5)
 
 ### Environment Variables
 
