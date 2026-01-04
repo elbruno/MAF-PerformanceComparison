@@ -16,7 +16,8 @@
 
     <!-- Test Configuration Card -->
     <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => configCollapsed = !configCollapsed">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            style="cursor: pointer;" @onclick="() => configCollapsed = !configCollapsed">
             <h5 class="mb-0">Test Configuration</h5>
             <span class="badge bg-light text-dark">@(configCollapsed ? "▼" : "▲")</span>
         </div>
@@ -44,7 +45,8 @@
                     <button class="btn btn-danger btn-lg" @onclick="StopBothTests" disabled="@(!isRunning)">
                         <span class="bi bi-stop-fill"></span> Stop Tests
                     </button>
-                    <button class="btn btn-primary btn-lg" @onclick="ExportResults" disabled="@(dotnetStatus == null && pythonStatus == null)">
+                    <button class="btn btn-primary btn-lg" @onclick="ExportResults"
+                        disabled="@(dotnetStatus == null && pythonStatus == null)">
                         <span class="bi bi-download"></span> Export Results
                     </button>
                 </div>
@@ -54,7 +56,8 @@
 
     <!-- Service Status Card -->
     <div class="card mb-4">
-        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => statusCollapsed = !statusCollapsed">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center"
+            style="cursor: pointer;" @onclick="() => statusCollapsed = !statusCollapsed">
             <h5 class="mb-0">Service Status</h5>
             <span class="badge bg-light text-dark">@(statusCollapsed ? "▼" : "▲")</span>
         </div>
@@ -88,7 +91,8 @@
         <!-- .NET Results Card -->
         <div class="col-md-6 mb-4">
             <div class="card">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => dotnetCollapsed = !dotnetCollapsed">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center"
+                    style="cursor: pointer;" @onclick="() => dotnetCollapsed = !dotnetCollapsed">
                     <h5 class="mb-0">.NET Results</h5>
                     <span class="badge bg-light text-dark">@(dotnetCollapsed ? "▼" : "▲")</span>
                 </div>
@@ -97,17 +101,15 @@
                     <div class="card-body">
                         @if (dotnetStatus != null)
                         {
-                            <h6>Status: <span class="badge @GetStatusBadgeClass(dotnetStatus.Status)">@dotnetStatus.Status</span></h6>
-                            
+                            <h6>Status: <span
+                                    class="badge @GetStatusBadgeClass(dotnetStatus.Status)">@dotnetStatus.Status</span></h6>
+
                             @if (dotnetStatus.Status == "Running")
                             {
                                 <div class="progress mb-3">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                         role="progressbar" 
-                                         style="width: @(dotnetStatus.ProgressPercentage)%"
-                                         aria-valuenow="@dotnetStatus.ProgressPercentage" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                        style="width: @(dotnetStatus.ProgressPercentage)%"
+                                        aria-valuenow="@dotnetStatus.ProgressPercentage" aria-valuemin="0" aria-valuemax="100">
                                         @dotnetStatus.ProgressPercentage.ToString("F1")%
                                     </div>
                                 </div>
@@ -115,16 +117,37 @@
 
                             <table class="table table-sm">
                                 <tbody>
-                                    <tr><th>Iterations</th><td>@dotnetStatus.CurrentIteration / @dotnetStatus.TotalIterations</td></tr>
-                                    <tr><th>Elapsed Time</th><td>@(dotnetStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td></tr>
+                                    <tr>
+                                        <th>Iterations</th>
+                                        <td>@dotnetStatus.CurrentIteration / @dotnetStatus.TotalIterations</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Elapsed Time</th>
+                                        <td>@(dotnetStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td>
+                                    </tr>
                                     @if (dotnetStatus.AverageTimePerIterationMs > 0)
                                     {
-                                        <tr><th>Average Time</th><td>@dotnetStatus.AverageTimePerIterationMs.ToString("F3") ms</td></tr>
-                                        <tr><th>Min Time</th><td>@dotnetStatus.MinIterationTimeMs.ToString("F3") ms</td></tr>
-                                        <tr><th>Max Time</th><td>@dotnetStatus.MaxIterationTimeMs.ToString("F3") ms</td></tr>
+                                        <tr>
+                                            <th>Average Time</th>
+                                            <td>@dotnetStatus.AverageTimePerIterationMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Min Time</th>
+                                            <td>@dotnetStatus.MinIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Max Time</th>
+                                            <td>@dotnetStatus.MaxIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
                                     }
-                                    <tr><th>Memory Used</th><td>@dotnetStatus.MemoryUsedMB.ToString("F2") MB</td></tr>
-                                    <tr><th>Warmup</th><td>@(dotnetStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                    <tr>
+                                        <th>Memory Used</th>
+                                        <td>@dotnetStatus.MemoryUsedMB.ToString("F2") MB</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Warmup</th>
+                                        <td>@(dotnetStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td>
+                                    </tr>
                                 </tbody>
                             </table>
 
@@ -145,7 +168,8 @@
         <!-- Python Results Card -->
         <div class="col-md-6 mb-4">
             <div class="card">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => pythonCollapsed = !pythonCollapsed">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center"
+                    style="cursor: pointer;" @onclick="() => pythonCollapsed = !pythonCollapsed">
                     <h5 class="mb-0">Python Results</h5>
                     <span class="badge bg-light text-dark">@(pythonCollapsed ? "▼" : "▲")</span>
                 </div>
@@ -154,17 +178,15 @@
                     <div class="card-body">
                         @if (pythonStatus != null)
                         {
-                            <h6>Status: <span class="badge @GetStatusBadgeClass(pythonStatus.Status)">@pythonStatus.Status</span></h6>
-                            
+                            <h6>Status: <span
+                                    class="badge @GetStatusBadgeClass(pythonStatus.Status)">@pythonStatus.Status</span></h6>
+
                             @if (pythonStatus.Status == "Running")
                             {
                                 <div class="progress mb-3">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
-                                         role="progressbar" 
-                                         style="width: @(pythonStatus.ProgressPercentage)%"
-                                         aria-valuenow="@pythonStatus.ProgressPercentage" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                        role="progressbar" style="width: @(pythonStatus.ProgressPercentage)%"
+                                        aria-valuenow="@pythonStatus.ProgressPercentage" aria-valuemin="0" aria-valuemax="100">
                                         @pythonStatus.ProgressPercentage.ToString("F1")%
                                     </div>
                                 </div>
@@ -172,16 +194,37 @@
 
                             <table class="table table-sm">
                                 <tbody>
-                                    <tr><th>Iterations</th><td>@pythonStatus.CurrentIteration / @pythonStatus.TotalIterations</td></tr>
-                                    <tr><th>Elapsed Time</th><td>@(pythonStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td></tr>
+                                    <tr>
+                                        <th>Iterations</th>
+                                        <td>@pythonStatus.CurrentIteration / @pythonStatus.TotalIterations</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Elapsed Time</th>
+                                        <td>@(pythonStatus.ElapsedTimeMs / 1000.0).ToString("F2") s</td>
+                                    </tr>
                                     @if (pythonStatus.AverageTimePerIterationMs > 0)
                                     {
-                                        <tr><th>Average Time</th><td>@pythonStatus.AverageTimePerIterationMs.ToString("F3") ms</td></tr>
-                                        <tr><th>Min Time</th><td>@pythonStatus.MinIterationTimeMs.ToString("F3") ms</td></tr>
-                                        <tr><th>Max Time</th><td>@pythonStatus.MaxIterationTimeMs.ToString("F3") ms</td></tr>
+                                        <tr>
+                                            <th>Average Time</th>
+                                            <td>@pythonStatus.AverageTimePerIterationMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Min Time</th>
+                                            <td>@pythonStatus.MinIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Max Time</th>
+                                            <td>@pythonStatus.MaxIterationTimeMs.ToString("F3") ms</td>
+                                        </tr>
                                     }
-                                    <tr><th>Memory Used</th><td>@pythonStatus.MemoryUsedMB.ToString("F2") MB</td></tr>
-                                    <tr><th>Warmup</th><td>@(pythonStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td></tr>
+                                    <tr>
+                                        <th>Memory Used</th>
+                                        <td>@pythonStatus.MemoryUsedMB.ToString("F2") MB</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Warmup</th>
+                                        <td>@(pythonStatus.WarmupSuccessful ? "✓ Success" : "✗ Failed")</td>
+                                    </tr>
                                 </tbody>
                             </table>
 
@@ -201,13 +244,14 @@
     </div>
 
     <!-- Comparison Card -->
-    @if (dotnetStatus != null && pythonStatus != null && 
-         (dotnetStatus.Status == "Completed" || dotnetStatus.Status == "Stopped") &&
-         (pythonStatus.Status == "Completed" || pythonStatus.Status == "Stopped") &&
-         dotnetStatus.AverageTimePerIterationMs > 0 && pythonStatus.AverageTimePerIterationMs > 0)
+    @if (dotnetStatus != null && pythonStatus != null &&
+        (dotnetStatus.Status == "Completed" || dotnetStatus.Status == "Stopped") &&
+        (pythonStatus.Status == "Completed" || pythonStatus.Status == "Stopped") &&
+        dotnetStatus.AverageTimePerIterationMs > 0 && pythonStatus.AverageTimePerIterationMs > 0)
     {
         <div class="card mb-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="() => comparisonCollapsed = !comparisonCollapsed">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" @onclick="() => comparisonCollapsed = !comparisonCollapsed">
                 <h5 class="mb-0">Comparison Summary</h5>
                 <span class="badge bg-light text-dark">@(comparisonCollapsed ? "▼" : "▲")</span>
             </div>
@@ -224,7 +268,7 @@
                     <div class="alert alert-info">
                         <h6><strong>Performance Winner: @faster</strong></h6>
                         <p class="mb-0">
-                            @faster is faster by <strong>@diff.ToString("N3") ms</strong> per iteration 
+                            @faster is faster by <strong>@diff.ToString("N3") ms</strong> per iteration
                             (<strong>@percentDiff.ToString("N1")%</strong> improvement)
                         </p>
                     </div>
@@ -261,6 +305,7 @@
     private bool pythonHealthy = false;
     private string statusMessage = string.Empty;
     private System.Timers.Timer? _pollTimer;
+    private System.Threading.CancellationTokenSource? _startSequenceCts;
 
     // Collapse states
     private bool configCollapsed = false;
@@ -291,14 +336,72 @@
 
         try
         {
-            // Start both tests
-            var dotnetTask = ApiService.StartDotNetTestAsync(config);
-            var pythonTask = ApiService.StartPythonTestAsync(config);
+            // Start .NET test first
+            _startSequenceCts?.Cancel();
+            _startSequenceCts = new System.Threading.CancellationTokenSource();
 
-            await Task.WhenAll(dotnetTask, pythonTask);
+            var dotnetResponse = await ApiService.StartDotNetTestAsync(config);
+            if (dotnetResponse == null)
+            {
+                statusMessage = "Failed to start .NET test";
+                isRunning = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Start polling immediately to show .NET progress
+            StartPolling();
+
+            // Wait for .NET to finish in the background, then start Python
+            var ct = _startSequenceCts.Token;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!ct.IsCancellationRequested)
+                    {
+                        var ds = await ApiService.GetDotNetStatusAsync();
+                        dotnetStatus = ds;
+                        await InvokeAsync(StateHasChanged);
+
+                        if (ds == null) break;
+                        var done = ds.Status == "Completed" || ds.Status == "Stopped" || ds.Status == "Failed";
+                        if (done) break;
+
+                        await Task.Delay(1000, ct);
+                    }
+
+                    if (!ct.IsCancellationRequested)
+                    {
+                        statusMessage = ".NET tests finished. Starting Python tests...";
+                        await InvokeAsync(StateHasChanged);
+
+                        var pythonResponse = await ApiService.StartPythonTestAsync(config);
+                        if (pythonResponse == null)
+                        {
+                            statusMessage = "Failed to start Python test";
+                            await InvokeAsync(StateHasChanged);
+                        }
+                        else
+                        {
+                            statusMessage = "Python test started. Polling for updates...";
+                            await InvokeAsync(StateHasChanged);
+                        }
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // ignore
+                }
+                catch (Exception ex)
+                {
+                    statusMessage = $"Start sequence error: {ex.Message}";
+                    await InvokeAsync(StateHasChanged);
+                }
+            }, ct);
 
             statusMessage = "Tests started. Polling for updates...";
-            
+
             // Start polling for status
             StartPolling();
         }
@@ -307,7 +410,7 @@
             statusMessage = $"Error starting tests: {ex.Message}";
             isRunning = false;
         }
-        
+
         StateHasChanged();
     }
 
@@ -318,10 +421,12 @@
 
         try
         {
-            var dotnetTask = ApiService.StopDotNetTestAsync();
-            var pythonTask = ApiService.StopPythonTestAsync();
+            // Cancel any start-sequence in progress
+            try { _startSequenceCts?.Cancel(); } catch { }
 
-            await Task.WhenAll(dotnetTask, pythonTask);
+            // Stop .NET first, then Python to maintain the same ordering
+            var dotnetStopped = await ApiService.StopDotNetTestAsync();
+            var pythonStopped = await ApiService.StopPythonTestAsync();
 
             statusMessage = "Tests stopped.";
             StopPolling();
@@ -331,7 +436,7 @@
         {
             statusMessage = $"Error stopping tests: {ex.Message}";
         }
-        
+
         StateHasChanged();
     }
 
@@ -354,17 +459,15 @@
     {
         try
         {
-            var dotnetTask = ApiService.GetDotNetStatusAsync();
-            var pythonTask = ApiService.GetPythonStatusAsync();
-
-            await Task.WhenAll(dotnetTask, pythonTask);
-
-            dotnetStatus = await dotnetTask;
-            pythonStatus = await pythonTask;
+            // Query .NET status first, then Python status to preserve ordering
+            dotnetStatus = await ApiService.GetDotNetStatusAsync();
+            pythonStatus = await ApiService.GetPythonStatusAsync();
 
             // Check if both tests are done
-            var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status == "Failed";
-            var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status == "Failed";
+            var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status ==
+            "Failed";
+            var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status ==
+            "Failed";
 
             if (dotnetDone && pythonDone)
             {
@@ -398,7 +501,7 @@
             var fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
 
             await JSRuntime.InvokeVoidAsync("downloadFile", fileName, json);
-            
+
             statusMessage = $"Results exported to {fileName}";
             StateHasChanged();
         }
@@ -423,6 +526,7 @@
 
     public void Dispose()
     {
+        try { _startSequenceCts?.Cancel(); } catch { }
         StopPolling();
     }
 }
