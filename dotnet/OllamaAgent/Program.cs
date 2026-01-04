@@ -16,6 +16,7 @@ static Dictionary<string, object> GetMachineInfo()
         machineInfo["OSDescription"] = RuntimeInformation.OSDescription;
         machineInfo["ProcessorCount"] = Environment.ProcessorCount;
         machineInfo["Architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
+        machineInfo["DotNetVersion"] = RuntimeInformation.FrameworkDescription;
     }
     catch { }
 

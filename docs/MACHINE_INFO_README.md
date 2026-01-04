@@ -131,6 +131,7 @@ Language Runtime
     "ProcessorCount": 8,
     "LogicalProcessorCount": 16,
     "CPUMaxFreqGHz": 3.6,
+    "DotNetVersion": ".NET 10.0.0",
     "TotalMemoryGB": 16.0,
     "AvailableMemoryGB": 8.5,
     "MemoryPercentUsed": 47.5,
@@ -150,6 +151,7 @@ Language Runtime
 - Architecture: x86_64
 - Processors: 8 cores (16 logical)
 - CPU Max Frequency: 3.6 GHz
+- .NET Version: .NET 10.0.0
 - Total Memory: 16.0 GB
 - Available Memory: 8.5 GB
 - GPU: NVIDIA GeForce RTX 3080 (10240 MB)

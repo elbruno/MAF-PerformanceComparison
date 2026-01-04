@@ -533,6 +533,10 @@ def create_comparison_markdown(
             ]
         )
 
+        # Add runtime information if available
+        if machine_info.get("DotNetVersion"):
+            markdown_lines.append(f"- .NET Version: {machine_info.get('DotNetVersion')}")
+
         # Add CPU frequency if available
         if machine_info.get("CPUMaxFreqGHz"):
             markdown_lines.append(f"- CPU Max Frequency: {machine_info.get('CPUMaxFreqGHz')} GHz")

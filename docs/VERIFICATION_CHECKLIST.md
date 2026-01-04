@@ -154,6 +154,7 @@
   "CPUMaxFreqGHz": "number",      ✅ Implemented
   "CPUCurrentFreqGHz": "number",  ✅ Implemented
   "CPUModel": "string",           ✅ Implemented
+  "DotNetVersion": "string",      ✅ Implemented
   "TotalMemoryGB": "number",      ✅ Implemented
   "AvailableMemoryGB": "number",  ✅ Implemented
   "MemoryPercentUsed": "number",  ✅ Implemented
