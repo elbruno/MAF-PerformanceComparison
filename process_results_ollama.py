@@ -270,6 +270,7 @@ def create_comparison_markdown(
     for entry in metrics:
         test_info = entry.get("TestInfo", {})
         metrics_data = entry.get("Metrics", {})
+        machine_info = entry.get("MachineInfo", {})
 
         markdown_lines.extend(
             [
@@ -285,6 +286,36 @@ def create_comparison_markdown(
                 f"- Endpoint: {test_info.get('Endpoint', 'N/A')}",
                 f"- Timestamp: {test_info.get('Timestamp', 'N/A')}",
                 f"- Warmup Successful: {test_info.get('WarmupSuccessful', False)}",
+                "",
+                "**Machine Information:**",
+                f"- OS: {machine_info.get('OSSystem', 'N/A')} {machine_info.get('OSRelease', '')}",
+                f"- Architecture: {machine_info.get('Architecture', 'N/A')}",
+                f"- Processors: {machine_info.get('ProcessorCount', 'N/A')} cores ({machine_info.get('LogicalProcessorCount', 'N/A')} logical)",
+            ]
+        )
+        
+        # Add CPU frequency if available
+        if machine_info.get('CPUMaxFreqGHz'):
+            markdown_lines.append(f"- CPU Max Frequency: {machine_info.get('CPUMaxFreqGHz')} GHz")
+        if machine_info.get('CPUMaxSpeedGHz'):
+            markdown_lines.append(f"- CPU Max Speed: {machine_info.get('CPUMaxSpeedGHz')} GHz")
+        
+        # Add memory info
+        if machine_info.get('TotalMemoryGB'):
+            markdown_lines.append(f"- Total Memory: {machine_info.get('TotalMemoryGB')} GB")
+        if machine_info.get('AvailableMemoryGB'):
+            markdown_lines.append(f"- Available Memory: {machine_info.get('AvailableMemoryGB')} GB")
+        
+        # Add GPU info if available
+        if machine_info.get('GPUModel'):
+            markdown_lines.append(f"- GPU: {machine_info.get('GPUModel')} ({machine_info.get('GPUMemoryMB', 'N/A')})")
+        
+        # Add Python version if available
+        if machine_info.get('PythonVersion'):
+            markdown_lines.append(f"- Python Version: {machine_info.get('PythonVersion')}")
+        
+        markdown_lines.extend(
+            [
                 "",
                 "**Performance Metrics:**",
                 f"- Total Iterations: {metrics_data.get('TotalIterations', 'N/A')}",

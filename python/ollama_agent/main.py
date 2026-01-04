@@ -3,6 +3,7 @@ import json
 import os
 import time
 import psutil
+import platform
 from datetime import datetime, timezone
 
 from agent_framework.ollama import OllamaChatClient
@@ -24,6 +25,62 @@ Set the model to use via the OLLAMA_CHAT_MODEL_ID environment variable.
 Reference: https://github.com/microsoft/agent-framework/blob/main/python/samples/getting_started/agents/ollama/ollama_agent_basic.py
 https://ollama.com/
 """
+
+
+def get_machine_info() -> dict:
+    """Gather comprehensive machine information."""
+    machine_info = {
+        "OSSystem": platform.system(),
+        "OSRelease": platform.release(),
+        "OSVersion": platform.version(),
+        "Architecture": platform.machine(),
+        "ProcessorCount": psutil.cpu_count(logical=False),
+        "LogicalProcessorCount": psutil.cpu_count(logical=True),
+    }
+    
+    # CPU frequency info
+    try:
+        cpu_freq = psutil.cpu_freq()
+        if cpu_freq:
+            machine_info["CPUMaxFreqGHz"] = round(cpu_freq.max / 1000, 2)
+            machine_info["CPUCurrentFreqGHz"] = round(cpu_freq.current / 1000, 2)
+    except:
+        pass
+    
+    # Memory info
+    try:
+        vm = psutil.virtual_memory()
+        machine_info["TotalMemoryGB"] = round(vm.total / (1024**3), 2)
+        machine_info["AvailableMemoryGB"] = round(vm.available / (1024**3), 2)
+        machine_info["MemoryPercentUsed"] = vm.percent
+    except:
+        pass
+    
+    # Swap info
+    try:
+        swap = psutil.swap_memory()
+        machine_info["TotalSwapGB"] = round(swap.total / (1024**3), 2)
+    except:
+        pass
+    
+    # GPU info (basic detection)
+    try:
+        # Try to detect NVIDIA GPU
+        import subprocess
+        result = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total', '--format=csv,noheader'],
+                               capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout:
+            gpu_info = result.stdout.strip().split(',')
+            if len(gpu_info) >= 2:
+                machine_info["GPUModel"] = gpu_info[0].strip()
+                machine_info["GPUMemoryMB"] = gpu_info[1].strip()
+    except:
+        pass
+    
+    # Python version
+    machine_info["PythonVersion"] = platform.python_version()
+    
+    return machine_info
 
 
 def get_time(location: str) -> str:
@@ -124,6 +181,7 @@ async def run_performance_test() -> None:
     
     # Export metrics to JSON file
     current_timestamp = datetime.now(timezone.utc)
+    machine_info = get_machine_info()
     metrics_data = {
         "TestInfo": {
             "Language": "Python",
@@ -134,6 +192,7 @@ async def run_performance_test() -> None:
             "Timestamp": current_timestamp.isoformat(),
             "WarmupSuccessful": warmup_successful
         },
+        "MachineInfo": machine_info,
         "Metrics": {
             "TotalIterations": ITERATIONS,
             "TotalExecutionTimeMs": total_execution_time,

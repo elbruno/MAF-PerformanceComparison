@@ -1,8 +1,69 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
+using System.Runtime.InteropServices;
+using System.Management;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
+
+// Helper function to get machine information
+static Dictionary<string, object> GetMachineInfo()
+{
+    var machineInfo = new Dictionary<string, object>();
+
+    try
+    {
+        machineInfo["OSDescription"] = RuntimeInformation.OSDescription;
+        machineInfo["ProcessorCount"] = Environment.ProcessorCount;
+        machineInfo["Architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
+    }
+    catch { }
+
+    // Try to get RAM information using WMI (Windows-specific)
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+        try
+        {
+            using (var memQuery = new ManagementObjectSearcher("SELECT TotalVisibleMemorySize FROM Win32_OperatingSystem"))
+            {
+                foreach (ManagementObject obj in memQuery.Get())
+                {
+                    var totalRamMb = Convert.ToInt64(obj["TotalVisibleMemorySize"]) / 1024;
+                    machineInfo["TotalMemoryGB"] = Math.Round(totalRamMb / 1024.0, 2);
+                    break;
+                }
+            }
+        }
+        catch { }
+
+        // Try to get CPU info
+        try
+        {
+            using (var cpuQuery = new ManagementObjectSearcher("SELECT Name, MaxClockSpeed FROM Win32_Processor"))
+            {
+                foreach (ManagementObject obj in cpuQuery.Get())
+                {
+                    machineInfo["CPUModel"] = obj["Name"]?.ToString();
+                    if (obj["MaxClockSpeed"] != null)
+                    {
+                        machineInfo["CPUMaxSpeedGHz"] = Math.Round(Convert.ToInt64(obj["MaxClockSpeed"]) / 1000.0, 2);
+                    }
+                    break;
+                }
+            }
+        }
+        catch { }
+    }
+
+    // Cross-platform available memory
+    try
+    {
+        machineInfo["AvailableMemoryGB"] = Math.Round(GC.GetTotalMemory(false) / (1024.0 * 1024.0 * 1024.0), 2);
+    }
+    catch { }
+
+    return machineInfo;
+}
 
 Console.WriteLine("=== C# Microsoft Agent Framework - Ollama Agent ===\n");
 
@@ -160,6 +221,7 @@ try
 
     // Export metrics to JSON file
     var currentTimestamp = DateTimeOffset.UtcNow;
+    var machineInfo = GetMachineInfo();
     var metricsData = new
     {
         TestInfo = new
@@ -172,6 +234,7 @@ try
             Timestamp = currentTimestamp.ToString("o"),
             WarmupSuccessful = warmupSuccessful
         },
+        MachineInfo = machineInfo,
         Metrics = new
         {
             TotalIterations = ITERATIONS,

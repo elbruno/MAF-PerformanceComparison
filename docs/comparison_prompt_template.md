@@ -56,31 +56,42 @@ I have two performance test results from running the Microsoft Agent Framework i
 
 Please provide a comprehensive comparison that includes:
 
-1. **Test Configuration Comparison:**
+1. **Test Environment & Configuration:**
    - Language/Framework used (C#/.NET vs Python)
    - AI Provider and Model
+   - Machine specifications (OS, CPU, Memory, GPU if available)
    - Warmup status
    - Test timestamp
 
-2. **Performance Metrics Analysis:**
+2. **Machine Hardware Comparison:**
+   - Processor count and clock speed
+   - Available system memory
+   - GPU capabilities (if applicable)
+   - Impact of hardware differences on performance
+
+3. **Performance Metrics Analysis:**
    - Total execution time comparison (which is faster and by what percentage?)
    - Average time per iteration (which has better average performance?)
    - Min/Max iteration times (which has more consistent performance?)
    - Performance variability (compare min/max ranges)
 
-3. **Resource Usage:**
+4. **Resource Usage & Efficiency:**
    - Memory consumption comparison
+   - CPU utilization metrics
    - Efficiency analysis (performance vs resource usage)
+   - Scalability implications
 
-4. **Key Insights:**
+5. **Key Insights:**
    - Which implementation performs better overall?
+   - How do machine specifications influence performance?
    - What are the notable differences?
    - Any recommendations based on the results?
 
-5. **Statistical Summary:**
+6. **Statistical Summary:**
    - Provide a clear winner or note if results are comparable
    - Highlight any significant performance gaps
    - Consider both speed and resource efficiency
+   - Account for hardware differences in conclusions
 
 Please format your response in a clear, structured way with percentages and concrete numbers for easy understanding.
 
@@ -123,7 +134,7 @@ Please format your response in a clear, structured way with percentages and conc
 
 ## Metrics File Structure
 
-Each metrics JSON file contains:
+Each metrics JSON file now contains comprehensive information:
 
 ```json
 {
@@ -135,6 +146,20 @@ Each metrics JSON file contains:
     "Endpoint": "service-endpoint",
     "Timestamp": "ISO-8601 timestamp",
     "WarmupSuccessful": true/false
+  },
+  "MachineInfo": {
+    "OSSystem": "Windows/Linux/macOS",
+    "OSRelease": "OS version",
+    "Architecture": "x86_64/ARM64",
+    "ProcessorCount": 8,
+    "LogicalProcessorCount": 16,
+    "CPUMaxFreqGHz": 3.6,
+    "TotalMemoryGB": 16.0,
+    "AvailableMemoryGB": 8.5,
+    "MemoryPercentUsed": 47.5,
+    "GPUModel": "NVIDIA GeForce RTX 3080",
+    "GPUMemoryMB": "10240",
+    "PythonVersion": "3.11.0"
   },
   "Metrics": {
     "TotalIterations": 1000,
@@ -149,8 +174,12 @@ Each metrics JSON file contains:
 
 ## Tips for Analysis
 
+- **Consider machine specifications**: Hardware differences (CPU, RAM, GPU) significantly impact performance - normalize expectations based on hardware
 - **Consider warmup status**: Tests with successful warmups may show different performance characteristics
 - **Check timestamps**: Ensure tests were run under similar conditions (similar system load, network conditions, etc.)
 - **Look at consistency**: Min/Max ranges indicate performance stability
 - **Memory matters**: Lower memory usage is better for scalability
+- **CPU comparison**: More cores = potentially better parallel performance
+- **GPU impact**: GPU availability can dramatically affect certain workloads
 - **Average vs Total**: Both metrics are important - average shows per-operation efficiency, total shows cumulative overhead
+- **Hardware-normalized analysis**: When comparing different machines, consider performance-per-watt or performance-per-core metrics
