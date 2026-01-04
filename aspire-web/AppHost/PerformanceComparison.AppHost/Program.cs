@@ -1,13 +1,23 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+// add Python backend for running Python agent tests
+var pythonBackend = builder.AddUvicornApp("app", "./app", "main:app")
+    .WithUv()
+    .WithExternalHttpEndpoints()
+    .WithHttpHealthCheck("/health");
+var pythonBackEndpoint = pythonBackend.GetEndpoint("http");
+
 // Add .NET backend for running .NET agent tests
-var dotnetBackend = builder.AddProject("dotnet-backend", "../../DotNetBackend/PerformanceComparison.DotNetBackend/PerformanceComparison.DotNetBackend.csproj")
-    .WithHttpEndpoint(port: 5002, name: "http");
+var dotnetBackend = builder.AddProject<Projects.PerformanceComparison_DotNetBackend>("dotnetBackend")
+    .WithExternalHttpEndpoints();
 
 // Add Blazor frontend web app
-var web = builder.AddProject("web", "../../Web/PerformanceComparison.Web/PerformanceComparison.Web.csproj")
+var web = builder.AddProject<Projects.PerformanceComparison_Web>("web")
+    .WaitFor(pythonBackend)
+    .WithReference(pythonBackend)
+    .WaitFor(dotnetBackend)
+    .WithReference(dotnetBackend)
     .WithExternalHttpEndpoints()
-    .WithEnvironment("DotNetBackend", "http://localhost:5002")
-    .WithEnvironment("PythonBackend", "http://localhost:5001");
+    .WithEnvironment("PythonBackend", pythonBackEndpoint);
 
 builder.Build().Run();

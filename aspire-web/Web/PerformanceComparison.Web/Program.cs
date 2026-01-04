@@ -3,6 +3,9 @@ using PerformanceComparison.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// add aspire service defaults
+builder.AddServiceDefaults();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -27,6 +30,10 @@ builder.Services.AddHttpClient("python-backend", client =>
 builder.Services.AddScoped<PerformanceApiService>();
 
 var app = builder.Build();
+
+// aspire map default endpoints
+app.MapDefaultEndpoints();
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
