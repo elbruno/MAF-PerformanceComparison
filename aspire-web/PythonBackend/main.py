@@ -113,7 +113,8 @@ async def get_status(sessionId: Optional[str] = None):
         "status": session.status,
         "currentIteration": session.current_iteration,
         "totalIterations": session.total_iterations,
-        "elapsedTimeMs": session.elapsed_time_ms,
+        # Ensure elapsedTimeMs is an integer number of milliseconds so C# can deserialize to Int64
+        "elapsedTimeMs": int(session.elapsed_time_ms),
         "progressPercentage": progress_percentage,
         "averageTimePerIterationMs": avg_time,
         "minIterationTimeMs": min_time,
