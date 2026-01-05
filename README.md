@@ -48,6 +48,11 @@ This project is organized into **three distinct scenarios** to demonstrate diffe
 ### Scenario 1: Basic Metrics (Learning)
 
 ```bash
+# Using test runner (recommended)
+cd scenario-1-basic-metrics
+python run_tests.py -i 100 -a Ollama
+
+# Or manually
 cd scenario-1-basic-metrics/dotnet/OllamaAgent
 dotnet build && ITERATIONS=100 dotnet run
 ```
@@ -55,6 +60,11 @@ dotnet build && ITERATIONS=100 dotnet run
 ### Scenario 2: Enhanced Metrics (Recommended)
 
 ```bash
+# Using test runner (recommended)
+cd scenario-2-enhanced-metrics
+python run_tests.py -i 1000 -a Ollama
+
+# Or manually
 cd scenario-2-enhanced-metrics/dotnet/OllamaAgent
 dotnet build && ITERATIONS=1000 dotnet run
 ```
@@ -65,6 +75,8 @@ dotnet build && ITERATIONS=1000 dotnet run
 cd scenario-3-aspire-web/AppHost/PerformanceComparison.AppHost
 dotnet run
 ```
+
+**Note**: Scenarios 1 and 2 include a `run_tests.py` script that runs both .NET and Python tests automatically and processes results. See each scenario's README for details.
 
 ---
 

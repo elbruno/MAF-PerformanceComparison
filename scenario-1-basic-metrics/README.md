@@ -83,7 +83,24 @@ Scenario 2 provides:
 
 ## Usage
 
-### .NET
+### Quick Start: Run All Tests
+
+Use the unified test runner to run both .NET and Python tests:
+
+```bash
+# From scenario-1-basic-metrics directory
+python run_tests.py -i 100 -a Ollama
+
+# Run with specific parameters
+python run_tests.py --iterations 500 --agent-type All
+
+# View all options
+python run_tests.py --help
+```
+
+### Manual Testing
+
+#### .NET
 
 ```bash
 cd dotnet/OllamaAgent
@@ -91,12 +108,35 @@ dotnet build
 ITERATIONS=1000 dotnet run
 ```
 
-### Python
+#### Python
 
 ```bash
 cd python/ollama_agent
 pip install -r requirements.txt
 ITERATIONS=1000 python main.py
+```
+
+## Test Runner Options
+
+The `run_tests.py` script provides several options:
+
+- `-i, --iterations`: Number of test iterations (default: 100)
+- `-a, --agent-type`: Which agents to test: HelloWorld, AzureOpenAI, Ollama, or All
+- `-m, --test-mode`: Test mode (standard, batch, concurrent, streaming, scenarios)
+- `--model`: AI model to use (default: ministral-3)
+- `--skip-analysis`: Skip Ollama analysis after tests
+- `--process-only`: Process existing metrics without running tests
+
+**Example**:
+```bash
+# Run 1000 iterations on Ollama agents only
+python run_tests.py -i 1000 -a Ollama
+
+# Run all agents with batch mode
+python run_tests.py -m batch -a All
+
+# Process existing results without running tests
+python run_tests.py --process-only
 ```
 
 ## Learning Points

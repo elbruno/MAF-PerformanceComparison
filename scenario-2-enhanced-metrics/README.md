@@ -128,7 +128,55 @@ result = metrics.get_result()
 # Access: result.mean, result.p95, result.rss_delta_mb, etc.
 ```
 
-### Run Tests
+## Quick Start: Run All Tests
+
+Use the unified test runner to run both .NET and Python tests with enhanced metrics:
+
+```bash
+# From scenario-2-enhanced-metrics directory
+python run_tests.py -i 1000 -a Ollama
+
+# Run with specific parameters
+python run_tests.py --iterations 500 --agent-type All --test-mode batch
+
+# Process existing results
+python run_tests.py --process-only
+
+# View all options
+python run_tests.py --help
+```
+
+### Test Runner Options
+
+The `run_tests.py` script provides comprehensive options:
+
+- `-i, --iterations`: Number of test iterations (default: 1000 for Scenario 2)
+- `-a, --agent-type`: Which agents to test: HelloWorld, AzureOpenAI, Ollama, or All
+- `-m, --test-mode`: Test mode (standard, batch, concurrent, streaming, scenarios)
+- `-b, --batch-size`: Batch size for batch mode (default: 10)
+- `-c, --concurrent-requests`: Concurrent requests for concurrent mode (default: 5)
+- `--model`: AI model to use (default: ministral-3)
+- `--skip-analysis`: Skip Ollama analysis after tests
+- `--process-only`: Process existing metrics without running tests
+
+**Examples**:
+```bash
+# Run 1000 iterations with enhanced metrics
+python run_tests.py -i 1000 -a Ollama
+
+# Test all agents in batch mode
+python run_tests.py -m batch -b 20 -a All
+
+# Run concurrent tests
+python run_tests.py -m concurrent -c 10 -i 500
+
+# Process and analyze existing results
+python run_tests.py --process-only
+```
+
+### Manual Testing
+
+If you prefer to run tests manually:
 
 ```bash
 # .NET
