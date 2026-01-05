@@ -121,7 +121,7 @@ CPU: Average: 23%           Max: 46%
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download) or later
 - [Python 3.10+](https://www.python.org/downloads/)
 - [Ollama](https://ollama.ai/): `ollama pull ministral-3`
-- **Scenario 3**: `dotnet workload install aspire`
+- [Aspire CLI](https://aspire.dev/get-started/install-cli/)
 
 ---
 
