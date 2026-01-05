@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Python" Version="13.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Web\PerformanceComparison.Web\PerformanceComparison.Web.csproj" />
+    <ProjectReference Include="..\..\DotNetBackend\PerformanceComparison.DotNetBackend\PerformanceComparison.DotNetBackend.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -6,6 +6,37 @@ Performance comparison of Microsoft Agent Framework implementations in Python vs
 
 This project compares the performance and resource usage of Microsoft Agent Framework implementations across Python and .NET. The framework provides a unified approach to building AI agents with advanced capabilities for orchestration, tool calling, and multi-agent workflows.
 
+## 🆕 New: Real-time Web Application with Aspire
+
+We've added a modern web application for interactive performance testing!
+
+**Features:**
+
+- 🚀 Real-time performance comparison between .NET and Python
+- 🎛️ Configure test parameters through a web UI
+- 📊 Live results and side-by-side comparisons
+- 🔍 Aspire dashboard for unified monitoring and telemetry
+
+**Quick Start:**
+
+```bash
+cd aspire-web/AppHost/PerformanceComparison.AppHost
+dotnet run
+```
+
+**Learn more**: See `docs/aspire-web-README.md` and `docs/ASPIRE_WEB.md` for the Aspire web scenario documentation
+
+Quick mode: run the Aspire-based web dashboard to interactively run tests and view live progress:
+
+```bash
+cd aspire-web/AppHost/PerformanceComparison.AppHost
+dotnet run
+```
+
+Then open the Aspire dashboard and navigate to `/dashboard` for the Performance Dashboard UI.
+
+---
+
 ## Quick Start with Ollama
 
 The fastest way to get started is using Ollama with local models:
