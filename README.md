@@ -13,6 +13,7 @@ This project is organized into **three distinct scenarios** to demonstrate diffe
 ### [Scenario 1: Basic Metrics (Learning Phase)](scenario-1-basic-metrics/)
 
 **Original/basic implementation** showing common but insufficient approaches:
+
 - Basic timing with stopwatch
 - Simple memory tracking (GC heap only)
 - Instantaneous CPU samples
@@ -23,6 +24,7 @@ This project is organized into **three distinct scenarios** to demonstrate diffe
 ### [Scenario 2: Enhanced Metrics (Production-Ready)](scenario-2-enhanced-metrics/) ⭐ **Recommended**
 
 **Industry-standard implementation** with comprehensive metrics:
+
 - 📊 **Statistical Rigor**: P90, P95, P99 percentiles, median, standard deviation
 - 💾 **Accurate Memory**: Process-level metrics (Working Set, Private Memory, Peak)
 - ⚡ **Precise CPU**: Time-based calculations with multi-core accounting
@@ -34,6 +36,7 @@ This project is organized into **three distinct scenarios** to demonstrate diffe
 ### [Scenario 3: Web Frontend (Aspire)](scenario-3-aspire-web/)
 
 **Real-time web application** with Scenario 2 metrics + modern UI:
+
 - 🚀 Real-time comparison with live updates
 - 🎛️ Interactive configuration through web UI
 - 📊 Visual dashboards with enhanced metrics
@@ -72,8 +75,7 @@ dotnet build && ITERATIONS=1000 dotnet run
 ### Scenario 3: Web Frontend
 
 ```bash
-cd scenario-3-aspire-web/AppHost/PerformanceComparison.AppHost
-dotnet run
+aspire run
 ```
 
 **Note**: Scenarios 1 and 2 include a `run_tests.py` script that runs both .NET and Python tests automatically and processes results. See each scenario's README for details.
@@ -97,6 +99,7 @@ dotnet run
 ## What's Measured (Scenarios 2 & 3)
 
 ### Enhanced Metrics
+
 - **Timing**: Mean, Median, P90, P95, P99, StdDev, Min, Max
 - **Memory**: Working Set, Private Memory, Peak, Trends
 - **CPU**: Time-based accurate %, Thread count, Patterns
@@ -142,11 +145,13 @@ MAF-PerformanceComparison/
 ## Documentation
 
 ### By Scenario
+
 - **[Scenario 1 README](scenario-1-basic-metrics/README.md)** - Basic metrics
 - **[Scenario 2 README](scenario-2-enhanced-metrics/README.md)** - Enhanced metrics
 - **[Scenario 3 README](scenario-3-aspire-web/README.md)** - Web frontend
 
 ### Performance Testing
+
 - **[Performance Quick Start](docs/PERFORMANCE_QUICK_START.md)** - Getting started
 - **[Performance Improvements](docs/PERFORMANCE_IMPROVEMENTS.md)** - Technical details
 - **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Apply to other agents
@@ -158,12 +163,15 @@ MAF-PerformanceComparison/
 ## Which Scenario Should I Use?
 
 ### 🎓 For Learning
+
 **Scenario 1**: Understand common mistakes and limitations
 
 ### 🏭 For Production
+
 **Scenario 2**: Accurate metrics, CI/CD, statistical rigor
 
 ### 🎨 For Demos
+
 **Scenario 3**: Real-time monitoring, visual dashboards
 
 ---
