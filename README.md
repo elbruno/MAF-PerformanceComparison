@@ -8,21 +8,32 @@ This project compares the performance and resource usage of Microsoft Agent Fram
 
 ## 🆕 New: Real-time Web Application with Aspire
 
-We've added a modern web application for interactive performance testing! 
+We've added a modern web application for interactive performance testing!
 
 **Features:**
+
 - 🚀 Real-time performance comparison between .NET and Python
 - 🎛️ Configure test parameters through a web UI
 - 📊 Live results and side-by-side comparisons
 - 🔍 Aspire dashboard for unified monitoring and telemetry
 
 **Quick Start:**
+
 ```bash
 cd aspire-web/AppHost/PerformanceComparison.AppHost
 dotnet run
 ```
 
-**Learn more**: See [ASPIRE_WEB.md](ASPIRE_WEB.md) and [aspire-web/README.md](aspire-web/README.md)
+**Learn more**: See `docs/aspire-web-README.md` and `docs/ASPIRE_WEB.md` for the Aspire web scenario documentation
+
+Quick mode: run the Aspire-based web dashboard to interactively run tests and view live progress:
+
+```bash
+cd aspire-web/AppHost/PerformanceComparison.AppHost
+dotnet run
+```
+
+Then open the Aspire dashboard and navigate to `/dashboard` for the Performance Dashboard UI.
 
 ---
 
