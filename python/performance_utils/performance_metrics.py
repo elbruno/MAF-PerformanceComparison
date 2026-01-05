@@ -178,7 +178,7 @@ class PerformanceMetrics:
             mem_full = self._process.memory_full_info()
             result.peak_rss_mb = getattr(mem_full, 'uss', mem_info.rss) / 1024 / 1024
             result.peak_vms_mb = mem_info.vms / 1024 / 1024
-        except:
+        except (psutil.AccessDenied, AttributeError, psutil.NoSuchProcess):
             result.peak_rss_mb = mem_info.rss / 1024 / 1024
             result.peak_vms_mb = mem_info.vms / 1024 / 1024
         
@@ -207,7 +207,7 @@ class PerformanceMetrics:
         
         index = percentile * (len(sorted_values) - 1)
         lower = int(index)
-        upper = int(index + 0.5) if index != lower else lower
+        upper = lower + 1
         
         if lower == upper or upper >= len(sorted_values):
             return sorted_values[lower]

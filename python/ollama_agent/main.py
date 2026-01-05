@@ -6,9 +6,12 @@ import psutil
 import platform
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Add parent directory to path for performance_utils import
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+_parent_dir = Path(__file__).resolve().parent.parent
+if str(_parent_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_dir))
 
 from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
