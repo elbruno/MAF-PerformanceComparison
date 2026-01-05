@@ -6,6 +6,28 @@ Performance comparison of Microsoft Agent Framework implementations in Python vs
 
 This project compares the performance and resource usage of Microsoft Agent Framework implementations across Python and .NET. The framework provides a unified approach to building AI agents with advanced capabilities for orchestration, tool calling, and multi-agent workflows.
 
+## 🆕 New: Enhanced Performance Metrics
+
+We've significantly improved the accuracy and detail of performance measurements!
+
+**Key Improvements:**
+
+- 📊 **Statistical Rigor**: P90, P95, P99 percentiles, median, standard deviation
+- 💾 **Accurate Memory Tracking**: Process-level metrics (Working Set, Private Memory, Peak usage)
+- ⚡ **Precise CPU Monitoring**: Time-based calculations with proper multi-core accounting
+- 🔍 **GC Insights**: Per-generation collection counts and pause time tracking
+- 📈 **Trend Analysis**: Memory and CPU snapshots over time
+
+**Quick Start:** Run tests as usual - enhanced metrics are collected automatically!
+
+```bash
+python run_performance_tests.py -i 1000
+```
+
+**Learn more**: See [Performance Quick Start](docs/PERFORMANCE_QUICK_START.md) or [Detailed Guide](docs/PERFORMANCE_IMPROVEMENTS.md)
+
+---
+
 ## 🆕 New: Real-time Web Application with Aspire
 
 We've added a modern web application for interactive performance testing!
@@ -123,25 +145,38 @@ python run_performance_tests.py --process-only
 
 ## What Gets Measured
 
-- **Execution Time**: Total time, average per iteration, min/max
-- **Memory Usage**: RAM consumed during execution
-- **CPU Utilization**: Processor usage across platforms
-- **Statistical Analysis**: Median, standard deviation
+### Enhanced Metrics (New!)
+- **Timing Statistics**: Mean, median, min, max, P90, P95, P99, standard deviation
+- **Process Memory**: Working Set, Private Memory, Peak usage, memory trends
+- **CPU Monitoring**: Time-based accurate CPU %, thread count, usage patterns
+- **Garbage Collection**: Per-generation counts (Gen0/1/2), GC pause time
+- **Trend Analysis**: Memory and CPU snapshots over time
+
+### Legacy Metrics
+- **Execution Time**: Total time, average per iteration
 - **Advanced Metrics**: Time-to-first-token, batch throughput, concurrent latency
+
+For details, see [Performance Improvements Guide](docs/PERFORMANCE_IMPROVEMENTS.md)
 
 ## Project Features
 
+- ✅ **Enhanced Performance Metrics**: Industry-standard measurements with statistical rigor
 - ✅ **Multiple AI Providers**: Azure OpenAI, Ollama, and demo modes
 - ✅ **Cross-platform**: Windows, Linux, macOS
 - ✅ **Multiple Test Modes**: Standard, batch, concurrent, streaming, scenarios
-- ✅ **Comprehensive Metrics**: Time, memory, CPU, statistical analysis
+- ✅ **Comprehensive Metrics**: Time, memory, CPU, GC, statistical analysis
 - ✅ **Automated Testing**: Scripts for easy test execution
 - ✅ **LLM-Ready Analysis**: JSON export for AI-powered comparisons
 
 ## Learn More
 
-For detailed information, advanced configuration, and troubleshooting:
+### Performance Testing
+- **[Performance Quick Start](docs/PERFORMANCE_QUICK_START.md)** - What's new and how to use enhanced metrics
+- **[Performance Improvements](docs/PERFORMANCE_IMPROVEMENTS.md)** - Detailed technical guide
+- **[Performance Recommendations](docs/PERFORMANCE_RECOMMENDATIONS.md)** - Complete analysis and roadmap
+- **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Apply improvements to other agents
 
+### General Documentation
 - [Detailed Guide](docs/DETAILED_GUIDE.md) - Comprehensive documentation
 - [Scripts Documentation](docs/SCRIPTS_README.md) - Test automation details
 - [Comparison Template](docs/comparison_prompt_template.md) - LLM analysis prompts
