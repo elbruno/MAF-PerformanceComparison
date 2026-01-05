@@ -5,6 +5,7 @@ using System.Management;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
+using PerformanceUtils;
 
 // Helper function to get machine information
 static Dictionary<string, object> GetMachineInfo()
@@ -72,14 +73,13 @@ Console.WriteLine("=== C# Microsoft Agent Framework - Ollama Agent ===\n");
 var endpoint = Environment.GetEnvironmentVariable("OLLAMA_ENDPOINT") ?? "http://localhost:11434";
 var modelName = Environment.GetEnvironmentVariable("OLLAMA_MODEL_NAME") ?? "ministral-3";
 
-// Start performance measurement
-var stopwatch = Stopwatch.StartNew();
-var startMemory = GC.GetTotalMemory(true);
-
 // Performance test: Run agent operations. Make configurable via environment variable for easier testing.
 var ITERATIONS = int.TryParse(Environment.GetEnvironmentVariable("ITERATIONS"), out var iters) ? iters : 1000;
-var iterationTimes = new List<double>();
 var warmupSuccessful = false;
+
+// Create enhanced performance metrics tracker
+var performanceMetrics = new PerformanceMetrics();
+performanceMetrics.Start();
 
 try
 {
@@ -161,10 +161,13 @@ try
 
             var iterationEnd = Stopwatch.GetTimestamp();
             var iterationTimeMs = (iterationEnd - iterationStart) * 1000.0 / Stopwatch.Frequency;
-            iterationTimes.Add(iterationTimeMs);
+            performanceMetrics.RecordMeasurement(iterationTimeMs);
 
+            // Capture detailed snapshots periodically
             if ((i + 1) % 100 == 0)
             {
+                performanceMetrics.CaptureMemorySnapshot();
+                performanceMetrics.CaptureCpuSnapshot();
                 Console.WriteLine($"  Progress: {i + 1}/{ITERATIONS} iterations completed");
             }
         }
@@ -192,35 +195,45 @@ try
 
             var iterationEnd = Stopwatch.GetTimestamp();
             var iterationTimeMs = (iterationEnd - iterationStart) * 1000.0 / Stopwatch.Frequency;
-            iterationTimes.Add(iterationTimeMs);
+            performanceMetrics.RecordMeasurement(iterationTimeMs);
 
             if ((i + 1) % 100 == 0)
             {
+                performanceMetrics.CaptureMemorySnapshot();
+                performanceMetrics.CaptureCpuSnapshot();
                 Console.WriteLine($"  Progress: {i + 1}/{ITERATIONS} iterations completed");
             }
         }
     }
 
-    // Calculate statistics
-    var avgIterationTime = iterationTimes.Average();
-    var minIterationTime = iterationTimes.Min();
-    var maxIterationTime = iterationTimes.Max();
+    // Get comprehensive metrics results
+    var result = performanceMetrics.GetResult();
 
-    // Stop performance measurement
-    stopwatch.Stop();
-    var endMemory = GC.GetTotalMemory(false);
-    var memoryUsed = (endMemory - startMemory) / 1024.0 / 1024.0; // Convert to MB
-
-    Console.WriteLine("=== Performance Metrics ===");
+    Console.WriteLine("=== Enhanced Performance Metrics ===");
     Console.WriteLine($"Total Iterations: {ITERATIONS}");
-    Console.WriteLine($"Total Execution Time: {stopwatch.ElapsedMilliseconds} ms");
-    Console.WriteLine($"Average Time per Iteration: {avgIterationTime:F3} ms");
-    Console.WriteLine($"Min Iteration Time: {minIterationTime:F3} ms");
-    Console.WriteLine($"Max Iteration Time: {maxIterationTime:F3} ms");
-    Console.WriteLine($"Memory Used: {memoryUsed:F2} MB");
-    Console.WriteLine("========================\n");
+    Console.WriteLine($"Total Execution Time: {result.TotalElapsedMs} ms");
+    Console.WriteLine("\nTiming Statistics:");
+    Console.WriteLine($"  Mean: {result.Mean:F3} ms");
+    Console.WriteLine($"  Median: {result.Median:F3} ms");
+    Console.WriteLine($"  Min: {result.Min:F3} ms");
+    Console.WriteLine($"  Max: {result.Max:F3} ms");
+    Console.WriteLine($"  P90: {result.P90:F3} ms");
+    Console.WriteLine($"  P95: {result.P95:F3} ms");
+    Console.WriteLine($"  P99: {result.P99:F3} ms");
+    Console.WriteLine($"  StdDev: {result.StandardDeviation:F3} ms");
+    Console.WriteLine("\nMemory Metrics:");
+    Console.WriteLine($"  Working Set Delta: {result.WorkingSetDeltaMB:F2} MB");
+    Console.WriteLine($"  Private Memory Delta: {result.PrivateMemoryDeltaMB:F2} MB");
+    Console.WriteLine($"  Peak Working Set: {result.PeakWorkingSetMB:F2} MB");
+    Console.WriteLine("\nGarbage Collection:");
+    Console.WriteLine($"  Gen0/Gen1/Gen2: {result.Gen0Collections}/{result.Gen1Collections}/{result.Gen2Collections}");
+    Console.WriteLine($"  Total GC Pause Time: {result.TotalGCPauseTimeMs:F2} ms");
+    Console.WriteLine("\nCPU Metrics:");
+    Console.WriteLine($"  Average CPU: {result.AverageCpuPercent:F2}%");
+    Console.WriteLine($"  Max CPU: {result.MaxCpuPercent:F2}%");
+    Console.WriteLine("====================================\n");
 
-    // Export metrics to JSON file
+    // Export enhanced metrics to JSON file
     var currentTimestamp = DateTimeOffset.UtcNow;
     var machineInfo = GetMachineInfo();
     var metricsData = new
@@ -239,11 +252,47 @@ try
         Metrics = new
         {
             TotalIterations = ITERATIONS,
-            TotalExecutionTimeMs = stopwatch.ElapsedMilliseconds,
-            AverageTimePerIterationMs = avgIterationTime,
-            MinIterationTimeMs = minIterationTime,
-            MaxIterationTimeMs = maxIterationTime,
-            MemoryUsedMB = memoryUsed
+            TotalExecutionTimeMs = result.TotalElapsedMs,
+            
+            Statistics = new
+            {
+                Mean = result.Mean,
+                Median = result.Median,
+                Min = result.Min,
+                Max = result.Max,
+                P90 = result.P90,
+                P95 = result.P95,
+                P99 = result.P99,
+                StandardDeviation = result.StandardDeviation
+            },
+            
+            Memory = new
+            {
+                WorkingSetDeltaMB = result.WorkingSetDeltaMB,
+                PrivateMemoryDeltaMB = result.PrivateMemoryDeltaMB,
+                PeakWorkingSetMB = result.PeakWorkingSetMB,
+                PeakPrivateMemoryMB = result.PeakPrivateMemoryMB
+            },
+            
+            GarbageCollection = new
+            {
+                Gen0Collections = result.Gen0Collections,
+                Gen1Collections = result.Gen1Collections,
+                Gen2Collections = result.Gen2Collections,
+                TotalGCPauseTimeMs = result.TotalGCPauseTimeMs
+            },
+            
+            CPU = new
+            {
+                AveragePercent = result.AverageCpuPercent,
+                MaxPercent = result.MaxCpuPercent
+            },
+            
+            // Legacy fields for backward compatibility
+            AverageTimePerIterationMs = result.Mean,
+            MinIterationTimeMs = result.Min,
+            MaxIterationTimeMs = result.Max,
+            MemoryUsedMB = result.WorkingSetDeltaMB
         }
     };
 

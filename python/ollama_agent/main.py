@@ -4,10 +4,15 @@ import os
 import time
 import psutil
 import platform
+import sys
 from datetime import datetime, timezone
+
+# Add parent directory to path for performance_utils import
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from agent_framework.ollama import OllamaChatClient
 from dotenv import load_dotenv
+from performance_utils import PerformanceMetrics
 
 # Load environment variables
 load_dotenv()
@@ -101,15 +106,13 @@ async def run_performance_test() -> None:
     print("Install Ollama from: https://ollama.com/")
     print(f"Start Ollama and pull the model: ollama pull {model_name}\n")
     
-    # Start performance measurement
-    start_time = time.time()
-    process = psutil.Process(os.getpid())
-    start_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
-    
     # Performance test: Run agent operations. Make configurable via environment variable for easier testing.
     ITERATIONS = int(os.getenv("ITERATIONS", "1000"))
-    iteration_times = []
     warmup_successful = False
+    
+    # Create enhanced performance metrics tracker
+    performance_metrics = PerformanceMetrics()
+    performance_metrics.start()
     
     try:
         # Create agent using agent-framework with Ollama
@@ -138,23 +141,21 @@ async def run_performance_test() -> None:
             iteration_start = time.time()
             await agent.run(f"Say hello {i + 1}")
             iteration_end = time.time()
-            iteration_times.append((iteration_end - iteration_start) * 1000)
+            iteration_time_ms = (iteration_end - iteration_start) * 1000
+            performance_metrics.record_measurement(iteration_time_ms)
             
+            # Capture detailed snapshots periodically
             if (i + 1) % 100 == 0:
+                performance_metrics.capture_memory_snapshot()
+                performance_metrics.capture_cpu_snapshot()
                 print(f"  Progress: {i + 1}/{ITERATIONS} iterations completed")
         
-        # Show a sample streaming response
         print("\n--- Sample Agent Streaming Response ---")
         print("Agent: ", end="", flush=True)
         async for chunk in agent.run_stream("What time is it in Seattle?"):
             if getattr(chunk, "text", None):
                 print(chunk.text, end="", flush=True)
         print("\n---------------------------\n")
-        
-        # Calculate statistics
-        avg_iteration_time = sum(iteration_times) / len(iteration_times)
-        min_iteration_time = min(iteration_times)
-        max_iteration_time = max(iteration_times)
         
     except Exception as ex:
         print(f"Error: {ex}")
@@ -163,22 +164,33 @@ async def run_performance_test() -> None:
         traceback.print_exc()
         raise
     
-    # Stop performance measurement
-    end_time = time.time()
-    end_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
-    total_execution_time = (end_time - start_time) * 1000  # Convert to ms
-    memory_used = end_memory - start_memory
+    # Get comprehensive metrics results
+    result = performance_metrics.get_result()
     
-    print("=== Performance Metrics ===")
+    print("=== Enhanced Performance Metrics ===")
     print(f"Total Iterations: {ITERATIONS}")
-    print(f"Total Execution Time: {total_execution_time:.0f} ms")
-    print(f"Average Time per Iteration: {avg_iteration_time:.3f} ms")
-    print(f"Min Iteration Time: {min_iteration_time:.3f} ms")
-    print(f"Max Iteration Time: {max_iteration_time:.3f} ms")
-    print(f"Memory Used: {memory_used:.2f} MB")
-    print("========================\n")
+    print(f"Total Execution Time: {result.total_elapsed_ms:.0f} ms")
+    print("\nTiming Statistics:")
+    print(f"  Mean: {result.mean:.3f} ms")
+    print(f"  Median: {result.median:.3f} ms")
+    print(f"  Min: {result.min:.3f} ms")
+    print(f"  Max: {result.max:.3f} ms")
+    print(f"  P90: {result.p90:.3f} ms")
+    print(f"  P95: {result.p95:.3f} ms")
+    print(f"  P99: {result.p99:.3f} ms")
+    print(f"  StdDev: {result.stdev:.3f} ms")
+    print("\nMemory Metrics:")
+    print(f"  RSS Delta: {result.rss_delta_mb:.2f} MB")
+    print(f"  VMS Delta: {result.vms_delta_mb:.2f} MB")
+    print(f"  Peak RSS: {result.peak_rss_mb:.2f} MB")
+    print("\nGarbage Collection:")
+    print(f"  Gen0/Gen1/Gen2: {result.gc_gen0_collections}/{result.gc_gen1_collections}/{result.gc_gen2_collections}")
+    print("\nCPU Metrics:")
+    print(f"  Average CPU: {result.average_cpu_percent:.2f}%")
+    print(f"  Max CPU: {result.max_cpu_percent:.2f}%")
+    print("====================================\n")
     
-    # Export metrics to JSON file
+    # Export enhanced metrics to JSON file
     current_timestamp = datetime.now(timezone.utc)
     machine_info = get_machine_info()
     metrics_data = {
@@ -194,11 +206,42 @@ async def run_performance_test() -> None:
         "MachineInfo": machine_info,
         "Metrics": {
             "TotalIterations": ITERATIONS,
-            "TotalExecutionTimeMs": total_execution_time,
-            "AverageTimePerIterationMs": avg_iteration_time,
-            "MinIterationTimeMs": min_iteration_time,
-            "MaxIterationTimeMs": max_iteration_time,
-            "MemoryUsedMB": memory_used
+            "TotalExecutionTimeMs": result.total_elapsed_ms,
+            
+            "Statistics": {
+                "Mean": result.mean,
+                "Median": result.median,
+                "Min": result.min,
+                "Max": result.max,
+                "P90": result.p90,
+                "P95": result.p95,
+                "P99": result.p99,
+                "StandardDeviation": result.stdev
+            },
+            
+            "Memory": {
+                "RSSDeltaMB": result.rss_delta_mb,
+                "VMSDeltaMB": result.vms_delta_mb,
+                "PeakRSSMB": result.peak_rss_mb,
+                "PeakVMSMB": result.peak_vms_mb
+            },
+            
+            "GarbageCollection": {
+                "Gen0Collections": result.gc_gen0_collections,
+                "Gen1Collections": result.gc_gen1_collections,
+                "Gen2Collections": result.gc_gen2_collections
+            },
+            
+            "CPU": {
+                "AveragePercent": result.average_cpu_percent,
+                "MaxPercent": result.max_cpu_percent
+            },
+            
+            # Legacy fields for backward compatibility
+            "AverageTimePerIterationMs": result.mean,
+            "MinIterationTimeMs": result.min,
+            "MaxIterationTimeMs": result.max,
+            "MemoryUsedMB": result.rss_delta_mb
         }
     }
     
