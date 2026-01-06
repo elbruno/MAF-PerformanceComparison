@@ -37,6 +37,7 @@ builder.Services.AddHttpClient("pythonBackend", client =>
 });
 
 builder.Services.AddScoped<PerformanceApiService>();
+builder.Services.AddScoped<InsightsService>();
 
 var app = builder.Build();
 

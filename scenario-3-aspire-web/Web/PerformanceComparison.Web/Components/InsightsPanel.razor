@@ -1,0 +1,156 @@
+@using PerformanceComparison.Web.Models
+@inject InsightsService InsightsService
+
+<div class="card mb-4">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center"
+        style="cursor: pointer;" @onclick="() => insightsCollapsed = !insightsCollapsed">
+        <h5 class="mb-0">💡 AI-Powered Insights</h5>
+        <span class="badge bg-light text-dark">@(insightsCollapsed ? "▼" : "▲")</span>
+    </div>
+
+    @if (!insightsCollapsed)
+    {
+        <div class="card-body">
+            @if (insights != null)
+            {
+                <!-- Main Insight -->
+                <div class="alert alert-info mb-3">
+                    <h6 class="alert-heading">🎯 Performance Winner</h6>
+                    <p class="mb-0">
+                        <strong>@insights.WinnerFramework</strong> is <strong>@insights.PercentageFaster.ToString("F1")%</strong> faster on average
+                    </p>
+                    <small>@insights.MainInsight</small>
+                </div>
+
+                <!-- Key Findings -->
+                @if (insights.KeyFindings.Any())
+                {
+                    <div class="mb-3">
+                        <h6>📊 Key Findings</h6>
+                        <ul class="list-unstyled">
+                            @foreach (var finding in insights.KeyFindings)
+                            {
+                                <li class="mb-2">
+                                    <span class="text-success">✓</span> @finding
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Anomalies -->
+                @if (insights.Anomalies.Any())
+                {
+                    <div class="mb-3">
+                        <h6>⚠️ Anomalies Detected</h6>
+                        <ul class="list-unstyled">
+                            @foreach (var anomaly in insights.Anomalies)
+                            {
+                                <li class="mb-2 text-warning">@anomaly</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Recommendation -->
+                @if (!string.IsNullOrEmpty(insights.Recommendation))
+                {
+                    <div class="alert alert-secondary">
+                        <h6 class="alert-heading">💼 Recommendation</h6>
+                        <p class="mb-0">@insights.Recommendation</p>
+                    </div>
+                }
+
+                <!-- Performance Metrics Summary -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">.NET Performance</h6>
+                                <div class="small">
+                                    <div><strong>Speed:</strong> 
+                                        @if (DotNetStatus?.AverageTimePerIterationMs > 0)
+                                        {
+                                            <span class="badge bg-primary">@DotNetStatus.AverageTimePerIterationMs.ToString("F3")ms</span>
+                                        }
+                                    </div>
+                                    <div><strong>Consistency:</strong> 
+                                        @if (DotNetStatus?.AverageTimePerIterationMs > 0)
+                                        {
+                                            var variance = (DotNetStatus.MaxIterationTimeMs - DotNetStatus.MinIterationTimeMs) / DotNetStatus.AverageTimePerIterationMs;
+                                            var consistency = Math.Max(0, 100 - variance * 10);
+                                            <span class="badge @(consistency > 85 ? "bg-success" : consistency > 70 ? "bg-warning" : "bg-danger")">
+                                                @consistency.ToString("F0")%
+                                            </span>
+                                        }
+                                    </div>
+                                    <div><strong>Memory:</strong> 
+                                        <span class="badge bg-info">@DotNetStatus?.MemoryUsedMB.ToString("F2")MB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Python Performance</h6>
+                                <div class="small">
+                                    <div><strong>Speed:</strong> 
+                                        @if (PythonStatus?.AverageTimePerIterationMs > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">@PythonStatus.AverageTimePerIterationMs.ToString("F3")ms</span>
+                                        }
+                                    </div>
+                                    <div><strong>Consistency:</strong> 
+                                        @if (PythonStatus?.AverageTimePerIterationMs > 0)
+                                        {
+                                            var variance = (PythonStatus.MaxIterationTimeMs - PythonStatus.MinIterationTimeMs) / PythonStatus.AverageTimePerIterationMs;
+                                            var consistency = Math.Max(0, 100 - variance * 10);
+                                            <span class="badge @(consistency > 85 ? "bg-success" : consistency > 70 ? "bg-warning" : "bg-danger")">
+                                                @consistency.ToString("F0")%
+                                            </span>
+                                        }
+                                    </div>
+                                    <div><strong>Memory:</strong> 
+                                        <span class="badge bg-info">@PythonStatus?.MemoryUsedMB.ToString("F2")MB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Run tests to generate insights</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public TestStatus? DotNetStatus { get; set; }
+
+    [Parameter]
+    public TestStatus? PythonStatus { get; set; }
+
+    private PerformanceInsights? insights;
+    private bool insightsCollapsed = false;
+
+    protected override void OnParametersSet()
+    {
+        if (DotNetStatus != null && PythonStatus != null &&
+            DotNetStatus.AverageTimePerIterationMs > 0 &&
+            PythonStatus.AverageTimePerIterationMs > 0)
+        {
+            insights = InsightsService.GenerateInsights(DotNetStatus, PythonStatus);
+        }
+        else
+        {
+            insights = null;
+        }
+    }
+}

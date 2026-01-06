@@ -3,7 +3,9 @@
 @using PerformanceComparison.Web.Services
 @using System.Text.Json
 @using System.Timers
+@using System.Globalization
 @inject PerformanceApiService ApiService
+@inject InsightsService InsightsService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 @rendermode InteractiveServer
@@ -45,10 +47,16 @@
                     <button class="btn btn-danger btn-lg" @onclick="StopBothTests" disabled="@(!isRunning)">
                         <span class="bi bi-stop-fill"></span> Stop Tests
                     </button>
-                    <button class="btn btn-primary btn-lg" @onclick="ExportResults"
-                        disabled="@(dotnetStatus == null && pythonStatus == null)">
-                        <span class="bi bi-download"></span> Export Results
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary btn-lg dropdown-toggle" data-bs-toggle="dropdown" 
+                            disabled="@(dotnetStatus == null && pythonStatus == null)">
+                            <span class="bi bi-download"></span> Export
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" @onclick='() => ExportResults("json")'>📄 JSON</a></li>
+                            <li><a class="dropdown-item" @onclick='() => ExportResults("csv")'>📊 CSV</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         }
@@ -276,6 +284,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Progress Visualization Card -->
+    @if (isRunning && (dotnetStatus != null || pythonStatus != null))
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">⚡ Real-time Progress</h5>
+            </div>
+            <div class="card-body">
+                @if (dotnetStatus != null && dotnetStatus.Status == "Running")
+                {
+                    <h6 class="mb-3">.NET Backend</h6>
+                    <CircularProgress 
+                        Current="@dotnetStatus.CurrentIteration"
+                        Total="@dotnetStatus.TotalIterations"
+                        IterationsPerSecond="@dotnetStatus.IterationsPerSecond"
+                        EstimatedSeconds="@(dotnetStatus.EstimatedTimeRemainingMs / 1000.0)" />
+                }
+
+                @if (pythonStatus != null && pythonStatus.Status == "Running")
+                {
+                    <h6 class="mb-3">Python Backend</h6>
+                    <CircularProgress 
+                        Current="@pythonStatus.CurrentIteration"
+                        Total="@pythonStatus.TotalIterations"
+                        IterationsPerSecond="@pythonStatus.IterationsPerSecond"
+                        EstimatedSeconds="@(pythonStatus.EstimatedTimeRemainingMs / 1000.0)" />
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Charts Panel -->
+    <ChartsPanel 
+        DotNetStatus="@dotnetStatus"
+        PythonStatus="@pythonStatus" />
+
+    <!-- Insights Panel -->
+    @if (dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped")
+    {
+        <InsightsPanel 
+            DotNetStatus="@dotnetStatus"
+            PythonStatus="@pythonStatus" />
+    }
 
     <!-- Comparison Card -->
     @if (dotnetStatus != null && pythonStatus != null &&
@@ -519,22 +571,33 @@
         }
     }
 
-    private async Task ExportResults()
+    private async Task ExportResults(string format)
     {
         try
         {
-            var exportData = new
+            string content;
+            string fileName;
+
+            if (format == "csv")
             {
-                exportDate = DateTime.UtcNow,
-                configuration = config,
-                dotnetResults = dotnetStatus,
-                pythonResults = pythonStatus
-            };
+                content = InsightsService.ExportToCsv(config, dotnetStatus, pythonStatus);
+                fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            }
+            else
+            {
+                var exportData = new
+                {
+                    exportDate = DateTime.UtcNow,
+                    configuration = config,
+                    dotnetResults = dotnetStatus,
+                    pythonResults = pythonStatus
+                };
 
-            var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
-            var fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                content = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+                fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            }
 
-            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, json);
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, content);
 
             statusMessage = $"Results exported to {fileName}";
             StateHasChanged();

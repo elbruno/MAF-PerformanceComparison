@@ -1,0 +1,98 @@
+@using System.Globalization
+
+<div class="progress-container">
+    <div class="circular-progress">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+            <!-- Background circle -->
+            <circle cx="100" cy="100" r="90" fill="none" stroke="#e9ecef" stroke-width="8"></circle>
+            
+            <!-- Progress circle -->
+            <circle cx="100" cy="100" r="90" fill="none" stroke="#0d6efd" stroke-width="8"
+                stroke-dasharray="@(565.48 * (Percentage / 100))"
+                stroke-dashoffset="0"
+                stroke-linecap="round"
+                style="transition: stroke-dasharray 0.5s ease; transform: rotate(-90deg); transform-origin: 100px 100px;">
+            </circle>
+            
+            <!-- Center text -->
+            <text x="100" y="95" text-anchor="middle" font-size="32" font-weight="bold" fill="#0d6efd">
+                @(Percentage.ToString("F0"))%
+            </text>
+            <text x="100" y="125" text-anchor="middle" font-size="12" fill="#666">
+                Progress
+            </text>
+        </svg>
+    </div>
+
+    <div class="progress-stats">
+        <div class="stat-item">
+            <span class="stat-label">Current:</span>
+            <span class="stat-value">@Current / @Total</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Speed:</span>
+            <span class="stat-value">@(IterationsPerSecond.ToString("F1"))/s</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">ETA:</span>
+            <span class="stat-value">@(EstimatedSeconds.ToString("F0"))s</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Current { get; set; }
+
+    [Parameter]
+    public int Total { get; set; }
+
+    [Parameter]
+    public double IterationsPerSecond { get; set; }
+
+    [Parameter]
+    public double EstimatedSeconds { get; set; }
+
+    public double Percentage => Total > 0 ? (Current / (double)Total) * 100 : 0;
+}
+
+<style>
+    .progress-container {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .circular-progress {
+        flex-shrink: 0;
+    }
+
+    .progress-stats {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+</style>
