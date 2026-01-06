@@ -14,25 +14,25 @@
             <ul class="nav nav-tabs mb-3" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link @(activeTab == "trends" ? "active" : "")" id="trends-tab" type="button"
-                        @onclick='() => activeTab = "trends"'>
+                        @onclick='() => SwitchTab("trends")'>
                         ⏱️ Performance Trend
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link @(activeTab == "distribution" ? "active" : "")" id="distribution-tab"
-                        type="button" @onclick='() => activeTab = "distribution"'>
+                        type="button" @onclick='() => SwitchTab("distribution")'>
                         📈 Distribution
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link @(activeTab == "memory" ? "active" : "")" id="memory-tab" type="button"
-                        @onclick='() => activeTab = "memory"'>
+                        @onclick='() => SwitchTab("memory")'>
                         💾 Memory Usage
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link @(activeTab == "comparison" ? "active" : "")" id="comparison-tab" type="button"
-                        @onclick='() => activeTab = "comparison"'>
+                        @onclick='() => SwitchTab("comparison")'>
                         🎯 Comparison
                     </button>
                 </li>
@@ -93,6 +93,17 @@
     private bool chartsCollapsed = false;
     private TestStatus? _previousDotNetStatus;
     private TestStatus? _previousPythonStatus;
+
+    private async Task SwitchTab(string newTab)
+    {
+        if (activeTab != newTab)
+        {
+            activeTab = newTab;
+            // Always render when user manually switches tabs
+            await Task.Delay(100);
+            await RenderCharts();
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
