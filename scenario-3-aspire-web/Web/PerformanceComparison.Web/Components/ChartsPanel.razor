@@ -122,6 +122,7 @@
     private bool chartsCollapsed = false;
     private TestStatus? _previousDotNetStatus;
     private TestStatus? _previousPythonStatus;
+    private bool _jsReady = false;
 
     private async Task SwitchTab(string newTab)
     {
@@ -129,8 +130,11 @@
         {
             activeTab = newTab;
             // Always render when user manually switches tabs
-            await Task.Delay(100);
-            await RenderCharts();
+            if (_jsReady)
+            {
+                await Task.Delay(100);
+                await RenderCharts();
+            }
         }
     }
 
@@ -161,10 +165,27 @@
             _previousPythonStatus = PythonStatus;
         }
 
-        if (shouldRender)
+        if (shouldRender && _jsReady)
         {
             await Task.Delay(100);
             await RenderCharts();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_jsReady)
+        {
+            try
+            {
+                // Try to render once JS interop is available (post-prerender)
+                await RenderCharts();
+                _jsReady = true;
+            }
+            catch
+            {
+                // JS not ready (likely prerender). We'll try again on the next render.
+            }
         }
     }
 
@@ -177,13 +198,13 @@
             return true;
 
         if (DotNetStatus != null && _previousDotNetStatus != null &&
-            (DotNetStatus.CurrentIteration != _previousDotNetStatus.CurrentIteration ||
-             DotNetStatus.Status != _previousDotNetStatus.Status))
+        (DotNetStatus.CurrentIteration != _previousDotNetStatus.CurrentIteration ||
+        DotNetStatus.Status != _previousDotNetStatus.Status))
             return true;
 
         if (PythonStatus != null && _previousPythonStatus != null &&
-            (PythonStatus.CurrentIteration != _previousPythonStatus.CurrentIteration ||
-             PythonStatus.Status != _previousPythonStatus.Status))
+        (PythonStatus.CurrentIteration != _previousPythonStatus.CurrentIteration ||
+        PythonStatus.Status != _previousPythonStatus.Status))
             return true;
 
         return false;
@@ -280,15 +301,15 @@ PythonStatus?.MemoryUsedMB ?? 0
         var pythonAvg = PythonStatus.AverageTimePerIterationMs;
         var dotnetMemory = DotNetStatus.MemoryUsedMB;
         var pythonMemory = PythonStatus.MemoryUsedMB;
-        
+
         // Calculate consistency scores (100 - coefficient of variation)
         var dotnetConsistency = CalculateConsistencyScore(DotNetStatus);
         var pythonConsistency = CalculateConsistencyScore(PythonStatus);
 
-        await JS.InvokeVoidAsync("renderGaugeCharts", 
-            dotnetAvg, pythonAvg, 
-            dotnetMemory, pythonMemory,
-            dotnetConsistency, pythonConsistency);
+        await JS.InvokeVoidAsync("renderGaugeCharts",
+        dotnetAvg, pythonAvg,
+        dotnetMemory, pythonMemory,
+        dotnetConsistency, pythonConsistency);
     }
 
     private double CalculateConsistencyScore(TestStatus status)
@@ -299,7 +320,7 @@ PythonStatus?.MemoryUsedMB ?? 0
         // Calculate coefficient of variation (CV)
         var range = status.MaxIterationTimeMs - status.MinIterationTimeMs;
         var cv = (range / status.AverageTimePerIterationMs) * 100;
-        
+
         // Convert to consistency score (lower CV = higher consistency)
         // Cap CV at 100 for scoring purposes
         var cappedCV = Math.Min(cv, 100);
