@@ -11,8 +11,9 @@ function loadChartJs() {
 
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-        script.integrity = 'sha256-pgSSjMBDuNIQP5CKEM5Qn2ATqNnS/xPbbGr3HdWu3Uw=';
-        script.crossOrigin = 'anonymous';
+        // TODO: Add SRI hash after verifying against official CDN. Use https://www.srihash.org/ to generate.
+        // script.integrity = 'sha384-...';
+        // script.crossOrigin = 'anonymous';
         script.async = true;
         script.onload = () => resolve();
         script.onerror = () => reject(new Error('Failed to load Chart.js'));

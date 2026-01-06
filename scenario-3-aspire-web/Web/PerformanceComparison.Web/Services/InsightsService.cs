@@ -8,14 +8,23 @@ public class InsightsService
 {
     /// <summary>
     /// Sanitizes string values to prevent CSV injection attacks by prefixing potentially dangerous characters.
+    /// Protects against formula injection in Excel, Google Sheets, and other spreadsheet applications.
     /// </summary>
     private static string SanitizeCsvField(string? value)
     {
         if (string.IsNullOrEmpty(value))
             return value ?? string.Empty;
 
+        // Trim whitespace to check actual content
+        var trimmed = value.TrimStart();
+        if (trimmed.Length == 0)
+            return value;
+
         // Check if the value starts with potentially dangerous characters
-        if (value.Length > 0 && (value[0] == '=' || value[0] == '+' || value[0] == '-' || value[0] == '@' || value[0] == '\t' || value[0] == '\r'))
+        // =, +, -, @ can start formulas; \t, \r, | can be used in injection attacks
+        char firstChar = trimmed[0];
+        if (firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@' || 
+            firstChar == '\t' || firstChar == '\r' || firstChar == '|')
         {
             // Prefix with single quote to prevent formula interpretation
             return "'" + value;
@@ -62,8 +71,10 @@ public class InsightsService
         else if (pythonConsistency > dotnetConsistency + 5)
             insights.KeyFindings.Add($"🎯 Python shows better consistency ({pythonConsistency:F1}% vs {dotnetConsistency:F1}%)");
 
-        var dotnetIterations = Math.Max(1, dotnet.CurrentIteration);
-        var pythonIterations = Math.Max(1, python.CurrentIteration);
+        // Calculate memory usage per 1000 iterations
+        // Ensure we have at least 1000 iterations to avoid inflated ratios
+        var dotnetIterations = Math.Max(1000, dotnet.CurrentIteration);
+        var pythonIterations = Math.Max(1000, python.CurrentIteration);
 
         var dotnetMemoryRatio = dotnet.MemoryUsedMB / (dotnetIterations / 1000.0);
         var pythonMemoryRatio = python.MemoryUsedMB / (pythonIterations / 1000.0);
