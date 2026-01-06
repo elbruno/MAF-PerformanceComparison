@@ -13,26 +13,26 @@
         <div class="card-body">
             <ul class="nav nav-tabs mb-3" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link @(activeTab == "trends" ? "active" : "")" 
-                        id="trends-tab" type="button" @onclick='() => activeTab = "trends"'>
+                    <button class="nav-link @(activeTab == "trends" ? "active" : "")" id="trends-tab" type="button"
+                        @onclick='() => activeTab = "trends"'>
                         ⏱️ Performance Trend
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link @(activeTab == "distribution" ? "active" : "")" 
-                        id="distribution-tab" type="button" @onclick='() => activeTab = "distribution"'>
+                    <button class="nav-link @(activeTab == "distribution" ? "active" : "")" id="distribution-tab"
+                        type="button" @onclick='() => activeTab = "distribution"'>
                         📈 Distribution
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link @(activeTab == "memory" ? "active" : "")" 
-                        id="memory-tab" type="button" @onclick='() => activeTab = "memory"'>
+                    <button class="nav-link @(activeTab == "memory" ? "active" : "")" id="memory-tab" type="button"
+                        @onclick='() => activeTab = "memory"'>
                         💾 Memory Usage
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link @(activeTab == "comparison" ? "active" : "")" 
-                        id="comparison-tab" type="button" @onclick='() => activeTab = "comparison"'>
+                    <button class="nav-link @(activeTab == "comparison" ? "active" : "")" id="comparison-tab" type="button"
+                        @onclick='() => activeTab = "comparison"'>
                         🎯 Comparison
                     </button>
                 </li>
@@ -91,14 +91,66 @@
 
     private string activeTab = "trends";
     private bool chartsCollapsed = false;
+    private TestStatus? _previousDotNetStatus;
+    private TestStatus? _previousPythonStatus;
 
     protected override async Task OnParametersSetAsync()
     {
+        // Only render charts if:
+        // 1. Status data exists
+        // 2. At least one test is running OR data has meaningfully changed
+        bool shouldRender = false;
+
         if (DotNetStatus != null || PythonStatus != null)
+        {
+            var dotnetRunning = DotNetStatus?.Status == "Running";
+            var pythonRunning = PythonStatus?.Status == "Running";
+
+            // Render if any test is actively running
+            if (dotnetRunning || pythonRunning)
+            {
+                shouldRender = true;
+            }
+            // Or if data has changed from previous state (for final update when tests complete)
+            else if (HasDataChanged())
+            {
+                shouldRender = true;
+            }
+
+            _previousDotNetStatus = DotNetStatus;
+            _previousPythonStatus = PythonStatus;
+        }
+
+        if (shouldRender)
         {
             await Task.Delay(100);
             await RenderCharts();
         }
+    }
+
+    private bool HasDataChanged()
+    {
+        // Check if this is a meaningful data change (not just a re-render)
+        if (_previousDotNetStatus == null && DotNetStatus != null)
+            return true;
+        if (_previousPythonStatus == null && PythonStatus != null)
+            return true;
+
+        if (DotNetStatus != null && _previousDotNetStatus != null)
+        {
+            if (DotNetStatus.CurrentIteration != _previousDotNetStatus.CurrentIteration ||
+            DotNetStatus.Status != _previousDotNetStatus.Status)
+                return true;
+        }
+
+        if (PythonStatus != null && _previousPythonStatus != null)
+        {
+            if (PythonStatus.CurrentIteration != _previousPythonStatus.CurrentIteration ||
+            PythonStatus.Status != _previousPythonStatus.Status)
+                return true;
+        }
+
+        return false;
     }
 
     private async Task RenderCharts()
@@ -151,9 +203,12 @@
 
     private async Task RenderMemoryChart()
     {
-        var labels = Enumerable.Range(1, Math.Max(10, (DotNetStatus?.CurrentIteration ?? 0) / 100)).Select(i => $"{i * 100}").ToList();
-        var dotnetMemory = Enumerable.Range(1, labels.Count).Select(i => (DotNetStatus?.MemoryUsedMB ?? 0) * (i / (double)labels.Count)).ToList();
-        var pythonMemory = Enumerable.Range(1, labels.Count).Select(i => (PythonStatus?.MemoryUsedMB ?? 0) * (i / (double)labels.Count)).ToList();
+        var labels = Enumerable.Range(1, Math.Max(10, (DotNetStatus?.CurrentIteration ?? 0) / 100)).Select(i => $"{i *
+        100}").ToList();
+        var dotnetMemory = Enumerable.Range(1, labels.Count).Select(i => (DotNetStatus?.MemoryUsedMB ?? 0) * (i /
+        (double)labels.Count)).ToList();
+        var pythonMemory = Enumerable.Range(1, labels.Count).Select(i => (PythonStatus?.MemoryUsedMB ?? 0) * (i /
+        (double)labels.Count)).ToList();
 
         await JS.InvokeVoidAsync("renderMemoryChart", labels, dotnetMemory, pythonMemory);
     }
@@ -161,18 +216,18 @@
     private async Task RenderComparisonCharts()
     {
         var avgLabels = new List<string> { ".NET", "Python" };
-        var avgValues = new List<double> 
-        { 
-            DotNetStatus?.AverageTimePerIterationMs ?? 0,
-            PythonStatus?.AverageTimePerIterationMs ?? 0
-        };
+        var avgValues = new List<double>
+{
+DotNetStatus?.AverageTimePerIterationMs ?? 0,
+PythonStatus?.AverageTimePerIterationMs ?? 0
+};
 
         var memLabels = new List<string> { ".NET", "Python" };
         var memValues = new List<double>
-        {
-            DotNetStatus?.MemoryUsedMB ?? 0,
-            PythonStatus?.MemoryUsedMB ?? 0
-        };
+{
+DotNetStatus?.MemoryUsedMB ?? 0,
+PythonStatus?.MemoryUsedMB ?? 0
+};
 
         await JS.InvokeVoidAsync("renderComparisonCharts", avgLabels, avgValues, memLabels, memValues);
     }
@@ -201,12 +256,12 @@
             return new();
 
         var buckets = new Dictionary<string, int>
-        {
-            { $"0-{status.MinIterationTimeMs * 1.25:F0}", 5 },
-            { $"{status.MinIterationTimeMs * 1.25:F0}-{status.AverageTimePerIterationMs:F0}", 20 },
-            { $"{status.AverageTimePerIterationMs:F0}-{status.MaxIterationTimeMs * 0.75:F0}", 15 },
-            { $"{status.MaxIterationTimeMs * 0.75:F0}+", 10 }
-        };
+{
+{ $"0-{status.MinIterationTimeMs * 1.25:F0}", 5 },
+{ $"{status.MinIterationTimeMs * 1.25:F0}-{status.AverageTimePerIterationMs:F0}", 20 },
+{ $"{status.AverageTimePerIterationMs:F0}-{status.MaxIterationTimeMs * 0.75:F0}", 15 },
+{ $"{status.MaxIterationTimeMs * 0.75:F0}+", 10 }
+};
 
         return buckets;
     }
