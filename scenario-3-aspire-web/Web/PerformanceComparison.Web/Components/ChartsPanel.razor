@@ -36,6 +36,12 @@
                         🎯 Comparison
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "gauges" ? "active" : "")" id="gauges-tab" type="button"
+                        @onclick='() => SwitchTab("gauges")'>
+                        🎚️ Gauges
+                    </button>
+                </li>
             </ul>
 
             <div class="tab-content">
@@ -67,6 +73,29 @@
                         <div class="col-md-6">
                             <h6 class="text-center">Memory Comparison</h6>
                             <canvas id="memComparisonChart" width="200" height="200"></canvas>
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "gauges")
+                {
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-center">Performance Index</h6>
+                            <div style="height: 250px;">
+                                <canvas id="performanceGauge"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center">Memory Efficiency</h6>
+                            <div style="height: 250px;">
+                                <canvas id="memoryGauge"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center">Consistency Score</h6>
+                            <div style="height: 250px;">
+                                <canvas id="consistencyGauge"></canvas>
+                            </div>
                         </div>
                     </div>
                 }
@@ -178,6 +207,9 @@
                 case "comparison":
                     await RenderComparisonCharts();
                     break;
+                case "gauges":
+                    await RenderGaugeCharts();
+                    break;
             }
         }
         catch (Exception ex)
@@ -237,6 +269,41 @@ PythonStatus?.MemoryUsedMB ?? 0
 };
 
         await JS.InvokeVoidAsync("renderComparisonCharts", avgLabels, avgValues, memLabels, memValues);
+    }
+
+    private async Task RenderGaugeCharts()
+    {
+        if (DotNetStatus == null || PythonStatus == null)
+            return;
+
+        var dotnetAvg = DotNetStatus.AverageTimePerIterationMs;
+        var pythonAvg = PythonStatus.AverageTimePerIterationMs;
+        var dotnetMemory = DotNetStatus.MemoryUsedMB;
+        var pythonMemory = PythonStatus.MemoryUsedMB;
+        
+        // Calculate consistency scores (100 - coefficient of variation)
+        var dotnetConsistency = CalculateConsistencyScore(DotNetStatus);
+        var pythonConsistency = CalculateConsistencyScore(PythonStatus);
+
+        await JS.InvokeVoidAsync("renderGaugeCharts", 
+            dotnetAvg, pythonAvg, 
+            dotnetMemory, pythonMemory,
+            dotnetConsistency, pythonConsistency);
+    }
+
+    private double CalculateConsistencyScore(TestStatus status)
+    {
+        if (status.AverageTimePerIterationMs <= 0)
+            return 0;
+
+        // Calculate coefficient of variation (CV)
+        var range = status.MaxIterationTimeMs - status.MinIterationTimeMs;
+        var cv = (range / status.AverageTimePerIterationMs) * 100;
+        
+        // Convert to consistency score (lower CV = higher consistency)
+        // Cap CV at 100 for scoring purposes
+        var cappedCV = Math.Min(cv, 100);
+        return Math.Round(100 - cappedCV, 2);
     }
 
     private List<double> GenerateIterationTimes(TestStatus? status)

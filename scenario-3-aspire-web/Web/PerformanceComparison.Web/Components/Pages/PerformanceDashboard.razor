@@ -6,11 +6,24 @@
 @using System.Globalization
 @inject PerformanceApiService ApiService
 @inject InsightsService InsightsService
+@inject TestHistoryService HistoryService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 @rendermode InteractiveServer
 
 <PageTitle>Performance Dashboard</PageTitle>
+
+<!-- Theme Toggle Button -->
+<button class="theme-toggle btn btn-outline-secondary" @onclick="ToggleTheme" title="Toggle dark mode">
+    @if (isDarkMode)
+    {
+        <span>☀️</span>
+    }
+    else
+    {
+        <span>🌙</span>
+    }
+</button>
 
 <div class="container-fluid">
     <h1 class="mb-4">Microsoft Agent Framework - Performance Dashboard</h1>
@@ -55,6 +68,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" @onclick='() => ExportResults("json")'>📄 JSON</a></li>
                             <li><a class="dropdown-item" @onclick='() => ExportResults("csv")'>📊 CSV</a></li>
+                            <li><a class="dropdown-item" @onclick='() => ExportResults("pdf")'>📕 PDF</a></li>
                         </ul>
                     </div>
                 </div>
@@ -380,6 +394,72 @@
             }
         </div>
     }
+
+    <!-- Test History Panel -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"
+            style="cursor: pointer;" @onclick="() => historyCollapsed = !historyCollapsed">
+            <h5 class="mb-0">📊 Test History</h5>
+            <span class="badge bg-light text-dark">@(historyCollapsed ? "▼" : "▲")</span>
+        </div>
+        @if (!historyCollapsed)
+        {
+            <div class="card-body">
+                @if (testHistory.Any())
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted">Last @testHistory.Count test results</span>
+                        <button class="btn btn-outline-danger btn-sm" @onclick="ClearHistory">
+                            <span class="bi bi-trash"></span> Clear History
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date/Time</th>
+                                    <th>Iterations</th>
+                                    <th>.NET Avg (ms)</th>
+                                    <th>Python Avg (ms)</th>
+                                    <th>Winner</th>
+                                    <th>Difference</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in testHistory)
+                                {
+                                    <tr>
+                                        <td>@item.Timestamp.ToLocalTime().ToString("MM/dd HH:mm")</td>
+                                        <td>@item.Iterations</td>
+                                        <td>@item.DotNetAvgTime.ToString("N2")</td>
+                                        <td>@item.PythonAvgTime.ToString("N2")</td>
+                                        <td>
+                                            <span class="badge @(item.Winner == ".NET" ? "bg-primary" : "bg-warning")">
+                                                @item.Winner
+                                            </span>
+                                        </td>
+                                        <td>@item.PercentageDifference.ToString("N1")%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteHistoryItem(item.Id)">
+                                                <span class="bi bi-x"></span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <p>No test history available. Run some tests to see results here.</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
 
 @code {
@@ -392,6 +472,8 @@
     private string statusMessage = string.Empty;
     private System.Timers.Timer? _pollTimer;
     private System.Threading.CancellationTokenSource? _startSequenceCts;
+    private bool isDarkMode = false;
+    private List<TestHistoryItem> testHistory = new();
 
     // Collapse states
     private bool configCollapsed = false;
@@ -399,10 +481,22 @@
     private bool dotnetCollapsed = false;
     private bool pythonCollapsed = false;
     private bool comparisonCollapsed = false;
+    private bool historyCollapsed = false;
 
     protected override async Task OnInitializedAsync()
     {
         await CheckHealth();
+        // Check initial theme state
+        isDarkMode = await JSRuntime.InvokeAsync<string>("themeManager.getTheme") == "dark";
+        // Load test history
+        testHistory = await HistoryService.GetHistoryAsync();
+    }
+
+    private async Task ToggleTheme()
+    {
+        var newTheme = await JSRuntime.InvokeAsync<string>("themeManager.toggle");
+        isDarkMode = newTheme == "dark";
+        StateHasChanged();
     }
 
     private async Task CheckHealth()
@@ -561,6 +655,13 @@
                 StopPolling();
                 isRunning = false;
                 statusMessage = "Tests completed.";
+                
+                // Save to history if both tests completed successfully
+                if (dotnetDone && pythonDone && dotnetStatus != null && pythonStatus != null &&
+                    dotnetStatus.Status == "Completed" && pythonStatus.Status == "Completed")
+                {
+                    await SaveTestToHistory();
+                }
             }
 
             await InvokeAsync(StateHasChanged);
@@ -576,31 +677,49 @@
     {
         try
         {
-            string content;
-            string fileName;
-
-            if (format == "csv")
+            if (format == "pdf")
             {
-                content = InsightsService.ExportToCsv(config, dotnetStatus, pythonStatus);
-                fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                // Export to PDF
+                var insights = InsightsService.GenerateInsights(dotnetStatus, pythonStatus);
+                var success = await JSRuntime.InvokeAsync<bool>("exportToPdf", dotnetStatus, pythonStatus, insights);
+                
+                if (success)
+                {
+                    statusMessage = "Results exported to PDF successfully";
+                }
+                else
+                {
+                    statusMessage = "Error exporting to PDF";
+                }
             }
             else
             {
-                var exportData = new
+                string content;
+                string fileName;
+
+                if (format == "csv")
                 {
-                    exportDate = DateTime.UtcNow,
-                    configuration = config,
-                    dotnetResults = dotnetStatus,
-                    pythonResults = pythonStatus
-                };
+                    content = InsightsService.ExportToCsv(config, dotnetStatus, pythonStatus);
+                    fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                }
+                else
+                {
+                    var exportData = new
+                    {
+                        exportDate = DateTime.UtcNow,
+                        configuration = config,
+                        dotnetResults = dotnetStatus,
+                        pythonResults = pythonStatus
+                    };
 
-                content = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
-                fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                    content = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+                    fileName = $"performance_results_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                }
+
+                await JSRuntime.InvokeVoidAsync("downloadFile", fileName, content);
+                statusMessage = $"Results exported to {fileName}";
             }
-
-            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, content);
-
-            statusMessage = $"Results exported to {fileName}";
+            
             StateHasChanged();
         }
         catch (Exception ex)
@@ -608,6 +727,54 @@
             statusMessage = $"Error exporting results: {ex.Message}";
             StateHasChanged();
         }
+    }
+
+    private async Task SaveTestToHistory()
+    {
+        if (dotnetStatus == null || pythonStatus == null)
+            return;
+
+        var dotnetAvg = dotnetStatus.AverageTimePerIterationMs;
+        var pythonAvg = pythonStatus.AverageTimePerIterationMs;
+        var faster = dotnetAvg < pythonAvg ? ".NET" : "Python";
+        var diff = Math.Abs(dotnetAvg - pythonAvg);
+        var percentDiff = (diff / Math.Max(dotnetAvg, pythonAvg)) * 100;
+
+        var historyItem = new TestHistoryItem
+        {
+            Timestamp = DateTime.UtcNow,
+            TestMode = "Standard",
+            Iterations = dotnetStatus.CurrentIteration,
+            DotNetAvgTime = dotnetAvg,
+            DotNetMinTime = dotnetStatus.MinIterationTimeMs,
+            DotNetMaxTime = dotnetStatus.MaxIterationTimeMs,
+            DotNetMemory = dotnetStatus.MemoryUsedMB,
+            DotNetTotalTime = dotnetStatus.ElapsedTimeMs,
+            PythonAvgTime = pythonAvg,
+            PythonMinTime = pythonStatus.MinIterationTimeMs,
+            PythonMaxTime = pythonStatus.MaxIterationTimeMs,
+            PythonMemory = pythonStatus.MemoryUsedMB,
+            PythonTotalTime = pythonStatus.ElapsedTimeMs,
+            Winner = faster,
+            PercentageDifference = percentDiff
+        };
+
+        await HistoryService.SaveTestResultAsync(historyItem);
+        testHistory = await HistoryService.GetHistoryAsync();
+    }
+
+    private async Task ClearHistory()
+    {
+        await HistoryService.ClearHistoryAsync();
+        testHistory = new List<TestHistoryItem>();
+        StateHasChanged();
+    }
+
+    private async Task DeleteHistoryItem(string id)
+    {
+        await HistoryService.DeleteTestResultAsync(id);
+        testHistory = await HistoryService.GetHistoryAsync();
+        StateHasChanged();
     }
 
     private string GetStatusBadgeClass(string status)
