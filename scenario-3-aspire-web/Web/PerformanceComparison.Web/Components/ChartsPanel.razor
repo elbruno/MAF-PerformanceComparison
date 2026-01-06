@@ -147,19 +147,15 @@
         if (_previousPythonStatus == null && PythonStatus != null)
             return true;
 
-        if (DotNetStatus != null && _previousDotNetStatus != null)
-        {
-            if (DotNetStatus.CurrentIteration != _previousDotNetStatus.CurrentIteration ||
-            DotNetStatus.Status != _previousDotNetStatus.Status)
-                return true;
-        }
+        if (DotNetStatus != null && _previousDotNetStatus != null &&
+            (DotNetStatus.CurrentIteration != _previousDotNetStatus.CurrentIteration ||
+             DotNetStatus.Status != _previousDotNetStatus.Status))
+            return true;
 
-        if (PythonStatus != null && _previousPythonStatus != null)
-        {
-            if (PythonStatus.CurrentIteration != _previousPythonStatus.CurrentIteration ||
-            PythonStatus.Status != _previousPythonStatus.Status)
-                return true;
-        }
+        if (PythonStatus != null && _previousPythonStatus != null &&
+            (PythonStatus.CurrentIteration != _previousPythonStatus.CurrentIteration ||
+             PythonStatus.Status != _previousPythonStatus.Status))
+            return true;
 
         return false;
     }
@@ -248,6 +244,9 @@ PythonStatus?.MemoryUsedMB ?? 0
         if (status?.CurrentIteration <= 0)
             return new();
 
+        // NOTE: This generates synthetic iteration times for visualization purposes.
+        // Actual per-iteration timing data is not stored during test execution for memory efficiency.
+        // The generated data respects min/max/avg bounds from actual test results.
         var times = new List<double>();
         var avgTime = status.AverageTimePerIterationMs;
 

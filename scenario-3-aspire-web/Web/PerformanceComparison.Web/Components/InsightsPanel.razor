@@ -77,8 +77,7 @@
                                     <div><strong>Consistency:</strong> 
                                         @if (DotNetStatus?.AverageTimePerIterationMs > 0)
                                         {
-                                            var variance = (DotNetStatus.MaxIterationTimeMs - DotNetStatus.MinIterationTimeMs) / DotNetStatus.AverageTimePerIterationMs;
-                                            var consistency = Math.Max(0, 100 - variance * 10);
+                                            var consistency = InsightsService.CalculateConsistency(DotNetStatus);
                                             <span class="badge @(consistency > 85 ? "bg-success" : consistency > 70 ? "bg-warning" : "bg-danger")">
                                                 @consistency.ToString("F0")%
                                             </span>
@@ -106,8 +105,7 @@
                                     <div><strong>Consistency:</strong> 
                                         @if (PythonStatus?.AverageTimePerIterationMs > 0)
                                         {
-                                            var variance = (PythonStatus.MaxIterationTimeMs - PythonStatus.MinIterationTimeMs) / PythonStatus.AverageTimePerIterationMs;
-                                            var consistency = Math.Max(0, 100 - variance * 10);
+                                            var consistency = InsightsService.CalculateConsistency(PythonStatus);
                                             <span class="badge @(consistency > 85 ? "bg-success" : consistency > 70 ? "bg-warning" : "bg-danger")">
                                                 @consistency.ToString("F0")%
                                             </span>
@@ -142,15 +140,11 @@
 
     protected override void OnParametersSet()
     {
-        if (DotNetStatus != null && PythonStatus != null &&
+        insights =
+            DotNetStatus != null && PythonStatus != null &&
             DotNetStatus.AverageTimePerIterationMs > 0 &&
-            PythonStatus.AverageTimePerIterationMs > 0)
-        {
-            insights = InsightsService.GenerateInsights(DotNetStatus, PythonStatus);
-        }
-        else
-        {
-            insights = null;
-        }
+            PythonStatus.AverageTimePerIterationMs > 0
+                ? InsightsService.GenerateInsights(DotNetStatus, PythonStatus)
+                : null;
     }
 }
