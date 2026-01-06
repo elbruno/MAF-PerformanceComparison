@@ -550,12 +550,13 @@
             pythonStatus = await ApiService.GetPythonStatusAsync();
 
             // Check if both tests are done
-            var dotnetDone = dotnetStatus?.Status == "Completed" || dotnetStatus?.Status == "Stopped" || dotnetStatus?.Status ==
-                                    "Failed";
-            var pythonDone = pythonStatus?.Status == "Completed" || pythonStatus?.Status == "Stopped" || pythonStatus?.Status ==
-                                    "Failed";
+            var dotnetDone = dotnetStatus != null && 
+                (dotnetStatus.Status == "Completed" || dotnetStatus.Status == "Stopped" || dotnetStatus.Status == "Failed");
+            var pythonDone = pythonStatus != null && 
+                (pythonStatus.Status == "Completed" || pythonStatus.Status == "Stopped" || pythonStatus.Status == "Failed");
 
-            if (dotnetDone && pythonDone)
+            // Stop polling when both tests are complete OR if both are null/failed
+            if ((dotnetDone && pythonDone) || (dotnetStatus == null && pythonStatus == null))
             {
                 StopPolling();
                 isRunning = false;
