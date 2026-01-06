@@ -103,6 +103,12 @@ public class InsightsService
         return insights;
     }
 
+    /// <summary>
+    /// Calculates consistency score based on variance relative to mean.
+    /// Public to allow reuse across components for consistent metric calculation.
+    /// </summary>
+    /// <param name="status">Test status containing timing metrics</param>
+    /// <returns>Consistency score from 0 to 100, where higher is more consistent</returns>
     public double CalculateConsistency(TestStatus status)
     {
         if (status?.AverageTimePerIterationMs <= 0)
@@ -164,8 +170,8 @@ public class InsightsService
         csv.NextRecord();
 
         csv.WriteField("Status");
-        csv.WriteField(SanitizeCsvField(dotnet?.Status) ?? "N/A");
-        csv.WriteField(SanitizeCsvField(python?.Status) ?? "N/A");
+        csv.WriteField(SanitizeCsvField(dotnet?.Status ?? "N/A"));
+        csv.WriteField(SanitizeCsvField(python?.Status ?? "N/A"));
         csv.NextRecord();
 
         csv.WriteField("Avg Time (ms)");
