@@ -24,7 +24,19 @@ function loadChartJs() {
 // Initialize library on first use
 loadChartJs().catch(err => console.error('Chart.js loading error:', err));
 
-// Render trends chart (performance over iterations)
+// Detect anomalies using 2 standard deviations
+function detectAnomalies(data) {
+    if (!data || data.length < 3) return [];
+    
+    const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+    const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length;
+    const stdDev = Math.sqrt(variance);
+    const threshold = 2 * stdDev;
+    
+    return data.map((val, idx) => Math.abs(val - mean) > threshold ? idx : -1).filter(idx => idx >= 0);
+}
+
+// Render trends chart (performance over iterations) with anomaly highlighting
 window.renderTrendsChart = async function (labels, dotnetTimes, pythonTimes) {
     await loadChartJs();
 
@@ -35,6 +47,31 @@ window.renderTrendsChart = async function (labels, dotnetTimes, pythonTimes) {
     if (charts.trends) {
         charts.trends.destroy();
     }
+
+    // Detect anomalies
+    const dotnetAnomalies = detectAnomalies(dotnetTimes.slice(0, 50));
+    const pythonAnomalies = detectAnomalies(pythonTimes.slice(0, 50));
+
+    // Create point styles for anomaly highlighting
+    const dotnetPointStyles = dotnetTimes.slice(0, 50).map((_, idx) => 
+        dotnetAnomalies.includes(idx) ? 'triangle' : 'circle'
+    );
+    const dotnetPointRadius = dotnetTimes.slice(0, 50).map((_, idx) => 
+        dotnetAnomalies.includes(idx) ? 6 : 3
+    );
+    const dotnetPointColors = dotnetTimes.slice(0, 50).map((_, idx) => 
+        dotnetAnomalies.includes(idx) ? '#dc3545' : '#0d6efd'
+    );
+
+    const pythonPointStyles = pythonTimes.slice(0, 50).map((_, idx) => 
+        pythonAnomalies.includes(idx) ? 'triangle' : 'circle'
+    );
+    const pythonPointRadius = pythonTimes.slice(0, 50).map((_, idx) => 
+        pythonAnomalies.includes(idx) ? 6 : 3
+    );
+    const pythonPointColors = pythonTimes.slice(0, 50).map((_, idx) => 
+        pythonAnomalies.includes(idx) ? '#dc3545' : '#fd7e14'
+    );
 
     charts.trends = new Chart(ctx, {
         type: 'line',
@@ -48,7 +85,10 @@ window.renderTrendsChart = async function (labels, dotnetTimes, pythonTimes) {
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
                     tension: 0.4,
                     borderWidth: 2,
-                    pointRadius: 3,
+                    pointStyle: dotnetPointStyles,
+                    pointRadius: dotnetPointRadius,
+                    pointBackgroundColor: dotnetPointColors,
+                    pointBorderColor: dotnetPointColors,
                     fill: true
                 },
                 {
@@ -58,7 +98,10 @@ window.renderTrendsChart = async function (labels, dotnetTimes, pythonTimes) {
                     backgroundColor: 'rgba(253, 126, 20, 0.1)',
                     tension: 0.4,
                     borderWidth: 2,
-                    pointRadius: 3,
+                    pointStyle: pythonPointStyles,
+                    pointRadius: pythonPointRadius,
+                    pointBackgroundColor: pythonPointColors,
+                    pointBorderColor: pythonPointColors,
                     fill: true
                 }
             ]
@@ -73,7 +116,22 @@ window.renderTrendsChart = async function (labels, dotnetTimes, pythonTimes) {
                 },
                 title: {
                     display: true,
-                    text: 'Iteration Time Trends'
+                    text: 'Iteration Time Trends (🔺 = Anomalies)'
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const idx = context.dataIndex;
+                            const datasetIdx = context.datasetIndex;
+                            if (datasetIdx === 0 && dotnetAnomalies.includes(idx)) {
+                                return '⚠️ Anomaly detected';
+                            }
+                            if (datasetIdx === 1 && pythonAnomalies.includes(idx)) {
+                                return '⚠️ Anomaly detected';
+                            }
+                            return '';
+                        }
+                    }
                 }
             },
             scales: {
@@ -328,6 +386,150 @@ window.renderComparisonCharts = async function (avgLabels, avgValues, memLabels,
     }
 };
 
+// Render gauge charts for comparison
+window.renderGaugeCharts = async function (dotnetAvg, pythonAvg, dotnetMemory, pythonMemory, dotnetConsistency, pythonConsistency) {
+    await loadChartJs();
+
+    // Performance Gauge (Average Time)
+    const perfCtx = document.getElementById('performanceGauge');
+    if (perfCtx) {
+        if (charts.performanceGauge) {
+            charts.performanceGauge.destroy();
+        }
+
+        // Calculate scores (lower is better for time, scale to 0-100)
+        const maxTime = Math.max(dotnetAvg, pythonAvg);
+        const dotnetScore = Math.round((1 - dotnetAvg / maxTime) * 100);
+        const pythonScore = Math.round((1 - pythonAvg / maxTime) * 100);
+
+        charts.performanceGauge = new Chart(perfCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['.NET', 'Python'],
+                datasets: [{
+                    data: [dotnetScore, pythonScore],
+                    backgroundColor: ['#0d6efd', '#fd7e14'],
+                    borderWidth: 2,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Performance Index'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '/100';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Memory Efficiency Gauge
+    const memCtx = document.getElementById('memoryGauge');
+    if (memCtx) {
+        if (charts.memoryGauge) {
+            charts.memoryGauge.destroy();
+        }
+
+        // Calculate scores (lower memory is better, scale to 0-100)
+        const maxMemory = Math.max(dotnetMemory, pythonMemory);
+        const dotnetMemScore = Math.round((1 - dotnetMemory / maxMemory) * 100);
+        const pythonMemScore = Math.round((1 - pythonMemory / maxMemory) * 100);
+
+        charts.memoryGauge = new Chart(memCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['.NET', 'Python'],
+                datasets: [{
+                    data: [dotnetMemScore, pythonMemScore],
+                    backgroundColor: ['#0d6efd', '#fd7e14'],
+                    borderWidth: 2,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Memory Efficiency'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '/100';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Consistency Gauge
+    const consCtx = document.getElementById('consistencyGauge');
+    if (consCtx) {
+        if (charts.consistencyGauge) {
+            charts.consistencyGauge.destroy();
+        }
+
+        charts.consistencyGauge = new Chart(consCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['.NET', 'Python'],
+                datasets: [{
+                    data: [dotnetConsistency, pythonConsistency],
+                    backgroundColor: ['#0d6efd', '#fd7e14'],
+                    borderWidth: 2,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Consistency Score'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+};
+
 // Download file utility
 window.downloadFile = function (filename, content) {
     const element = document.createElement('a');
@@ -338,3 +540,46 @@ window.downloadFile = function (filename, content) {
     element.click();
     document.body.removeChild(element);
 };
+
+// Dark mode toggle utilities
+window.themeManager = {
+    // Initialize theme from localStorage or system preference
+    init: function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        this.setTheme(theme);
+    },
+    
+    // Set theme and persist to localStorage
+    setTheme: function(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        // Update chart colors based on theme
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = theme === 'dark' ? '#e0e0e0' : '#666';
+            Chart.defaults.borderColor = theme === 'dark' ? '#404040' : '#ddd';
+        }
+    },
+    
+    // Toggle between light and dark
+    toggle: function() {
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(newTheme);
+        return newTheme;
+    },
+    
+    // Get current theme
+    getTheme: function() {
+        return document.documentElement.getAttribute('data-bs-theme') || 'light';
+    }
+};
+
+// Initialize theme on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.themeManager.init());
+} else {
+    window.themeManager.init();
+}
