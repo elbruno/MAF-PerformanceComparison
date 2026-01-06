@@ -11,6 +11,8 @@ function loadChartJs() {
 
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        script.integrity = 'sha256-pgSSjMBDuNIQP5CKEM5Qn2ATqNnS/xPbbGr3HdWu3Uw=';
+        script.crossOrigin = 'anonymous';
         script.async = true;
         script.onload = () => resolve();
         script.onerror = () => reject(new Error('Failed to load Chart.js'));

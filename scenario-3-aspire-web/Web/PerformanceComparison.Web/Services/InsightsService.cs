@@ -6,6 +6,24 @@ namespace PerformanceComparison.Web.Services;
 
 public class InsightsService
 {
+    /// <summary>
+    /// Sanitizes string values to prevent CSV injection attacks by prefixing potentially dangerous characters.
+    /// </summary>
+    private static string SanitizeCsvField(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value ?? string.Empty;
+
+        // Check if the value starts with potentially dangerous characters
+        if (value.Length > 0 && (value[0] == '=' || value[0] == '+' || value[0] == '-' || value[0] == '@' || value[0] == '\t' || value[0] == '\r'))
+        {
+            // Prefix with single quote to prevent formula interpretation
+            return "'" + value;
+        }
+
+        return value;
+    }
+
     public PerformanceInsights GenerateInsights(TestStatus? dotnet, TestStatus? python)
     {
         var insights = new PerformanceInsights();
@@ -44,8 +62,11 @@ public class InsightsService
         else if (pythonConsistency > dotnetConsistency + 5)
             insights.KeyFindings.Add($"🎯 Python shows better consistency ({pythonConsistency:F1}% vs {dotnetConsistency:F1}%)");
 
-        var dotnetMemoryRatio = dotnet.MemoryUsedMB / Math.Max(1, dotnet.CurrentIteration / 1000.0);
-        var pythonMemoryRatio = python.MemoryUsedMB / Math.Max(1, python.CurrentIteration / 1000.0);
+        var dotnetIterations = Math.Max(1, dotnet.CurrentIteration);
+        var pythonIterations = Math.Max(1, python.CurrentIteration);
+
+        var dotnetMemoryRatio = dotnet.MemoryUsedMB / (dotnetIterations / 1000.0);
+        var pythonMemoryRatio = python.MemoryUsedMB / (pythonIterations / 1000.0);
 
         if (dotnetMemoryRatio < pythonMemoryRatio)
             insights.KeyFindings.Add($"💾 .NET uses {((pythonMemoryRatio - dotnetMemoryRatio) / pythonMemoryRatio * 100):F0}% less memory per 1000 iterations");
@@ -71,17 +92,23 @@ public class InsightsService
         return insights;
     }
 
-    private double CalculateConsistency(TestStatus status)
+    public double CalculateConsistency(TestStatus status)
     {
         if (status?.AverageTimePerIterationMs <= 0)
             return 0;
 
-        // Simple consistency metric: (avg - min) / (max - min) * 100
+        // Consistency metric based on dispersion: smaller range relative to average => higher consistency
         var range = status.MaxIterationTimeMs - status.MinIterationTimeMs;
         if (range <= 0) return 100;
 
-        var deviation = status.AverageTimePerIterationMs - status.MinIterationTimeMs;
-        return Math.Max(0, 100 - (deviation / range * 100));
+        var avg = status.AverageTimePerIterationMs;
+        if (avg <= 0) return 0;
+
+        var variability = range / avg; // dimensionless measure of spread relative to mean
+        var score = 100 - (variability * 100);
+
+        // Clamp score to [0, 100]
+        return Math.Max(0, Math.Min(100, score));
     }
 
     public string ExportToCsv(TestConfiguration config, TestStatus? dotnet, TestStatus? python)
@@ -107,13 +134,13 @@ public class InsightsService
         csv.NextRecord();
 
         csv.WriteField("Model");
-        csv.WriteField(config.Model);
-        csv.WriteField(config.Model);
+        csv.WriteField(SanitizeCsvField(config.Model));
+        csv.WriteField(SanitizeCsvField(config.Model));
         csv.NextRecord();
 
         csv.WriteField("Endpoint");
-        csv.WriteField(config.Endpoint);
-        csv.WriteField(config.Endpoint);
+        csv.WriteField(SanitizeCsvField(config.Endpoint));
+        csv.WriteField(SanitizeCsvField(config.Endpoint));
         csv.NextRecord();
 
         csv.WriteField("");
@@ -126,8 +153,8 @@ public class InsightsService
         csv.NextRecord();
 
         csv.WriteField("Status");
-        csv.WriteField(dotnet?.Status ?? "N/A");
-        csv.WriteField(python?.Status ?? "N/A");
+        csv.WriteField(SanitizeCsvField(dotnet?.Status) ?? "N/A");
+        csv.WriteField(SanitizeCsvField(python?.Status) ?? "N/A");
         csv.NextRecord();
 
         csv.WriteField("Avg Time (ms)");
