@@ -329,7 +329,7 @@ PythonStatus?.MemoryUsedMB ?? 0
 
     private List<double> GenerateIterationTimes(TestStatus? status)
     {
-        if (status?.CurrentIteration <= 0)
+        if (status == null || status.CurrentIteration <= 0)
             return new();
 
         // NOTE: This generates synthetic iteration times for visualization purposes.
